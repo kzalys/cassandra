@@ -22,7 +22,9 @@ package org.apache.cassandra.stress.operations.userdefined;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ColumnDefinitions;
@@ -59,6 +61,48 @@ public abstract class SchemaStatement extends PartitionOperation
 
         if (statement != null)
             statement.setConsistencyLevel(JavaDriverClient.from(cl));
+    }
+
+    BoundStatement bindRowCAS(final Row row, final Object[] casDbValues, final Map<Integer, Integer> casConditionIndexOccurences)
+    {
+        final Map<Integer, Integer> localMapping = new HashMap<>(casConditionIndexOccurences);
+
+        int conditionIndexTracker = 0;
+        for (int i = 0 ; i < argumentIndex.length ; i++)
+        {
+            boolean replace = false;
+            Integer count = localMapping.get(argumentIndex[i]);
+            if (count != null)
+            {
+                count--;
+                localMapping.put(argumentIndex[i], count);
+                if (count == 0)
+                {
+                    replace = true;
+                }
+            }
+
+            if (replace)
+            {
+                bindBuffer[i] = casDbValues[conditionIndexTracker++];
+            }
+            else
+            {
+                Object value = row.get(argumentIndex[i]);
+                if (definitions.getType(i).getName().equals(DataType.date().getName()))
+                {
+                    // the java driver only accepts com.datastax.driver.core.LocalDate for CQL type "DATE"
+                    value= LocalDate.fromDaysSinceEpoch((Integer) value);
+                }
+
+                bindBuffer[i] = value;
+            }
+
+            if (bindBuffer[i] == null && !spec.partitionGenerator.permitNulls(argumentIndex[i])) {
+                throw new IllegalStateException("null value not allowed for partition keys and clustering keys");
+            }
+        }
+        return statement.bind(bindBuffer);
     }
 
     BoundStatement bindRow(Row row)
