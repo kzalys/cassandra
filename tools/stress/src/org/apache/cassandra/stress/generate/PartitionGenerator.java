@@ -39,8 +39,8 @@ public class PartitionGenerator
 
     public final double maxRowCount;
     public final double minRowCount;
-    final List<Generator> partitionKey;
-    final List<Generator> clusteringComponents;
+    public final List<Generator> partitionKey;
+    public final List<Generator> clusteringComponents;
     final List<Generator> valueComponents;
     final int[] clusteringDescendantAverages;
     final int[] clusteringComponentAverages;
