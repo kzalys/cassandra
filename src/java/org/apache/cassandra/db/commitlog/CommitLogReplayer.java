@@ -101,6 +101,7 @@ public class CommitLogReplayer
         this.archiver = commitLog.archiver;
     }
 
+    //Test
     public static CommitLogReplayer construct(CommitLog commitLog)
     {
         // compute per-CF and global replay intervals
