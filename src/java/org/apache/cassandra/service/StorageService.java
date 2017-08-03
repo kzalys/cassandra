@@ -2276,7 +2276,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
 
         UUID hostId = tokenMetadata.getHostId(endpoint);
         if (hostId != null && tokenMetadata.isMember(endpoint))
-            HintsService.instance.excise(hostId);
+            ScheduledExecutors.optionalTasks.schedule(() -> HintsService.instance.excise(hostId), StorageService.RING_DELAY, TimeUnit.MILLISECONDS);
 
         removeEndpoint(endpoint);
         tokenMetadata.removeEndpoint(endpoint);
