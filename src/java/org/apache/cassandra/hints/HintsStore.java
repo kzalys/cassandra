@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +78,13 @@ final class HintsStore
         return new HintsStore(hostId, hintsDirectory, writerParams, descriptors);
     }
 
-    InetAddressAndPort address()
+    @VisibleForTesting
+    int getDispatchQueueSize()
+    {
+        return dispatchDequeue.size();
+    }
+
+    InetAddress address()
     {
         return StorageService.instance.getEndpointForHostId(hostId);
     }
