@@ -18,6 +18,7 @@
 package org.apache.cassandra.service;
 
 import java.nio.ByteBuffer;
+import java.util.UUID;
 
 import com.google.common.collect.Iterables;
 import org.junit.AfterClass;
@@ -27,7 +28,6 @@ import org.junit.Test;
 import org.apache.cassandra.SchemaLoader;
 import org.apache.cassandra.Util;
 import org.apache.cassandra.db.*;
-import org.apache.cassandra.db.rows.UnfilteredRowIterator;
 import org.apache.cassandra.db.rows.Row;
 import org.apache.cassandra.db.partitions.PartitionUpdate;
 import org.apache.cassandra.gms.Gossiper;
@@ -100,5 +100,26 @@ public class PaxosStateTest
     private void assertNoDataPresent(ColumnFamilyStore cfs, DecoratedKey key)
     {
         Util.assertEmpty(Util.cmd(cfs, key).build());
+    }
+
+    @Test
+    public void testPrepareProposePaxos() throws Throwable
+    {
+        ColumnFamilyStore cfs = Keyspace.open("PaxosStateTestKeyspace1").getColumnFamilyStore("Standard1");
+        String key = "key" + System.nanoTime();
+        ByteBuffer value = ByteBufferUtil.bytes(0);
+        RowUpdateBuilder builder = new RowUpdateBuilder(cfs.metadata, FBUtilities.timestampMicros(), key);
+        builder.clustering("a").add("val", value);
+        PartitionUpdate update = Iterables.getOnlyElement(builder.build().getPartitionUpdates());
+
+        // CFS should be empty initially
+        assertNoDataPresent(cfs, Util.dk(key));
+
+        UUID ballot = UUIDGen.getRandomTimeUUIDFromMicros(System.currentTimeMillis() * 1000);
+
+        Commit commit = Commit.newPrepare(Util.dk(key), cfs.metadata, ballot);
+
+        assertTrue("paxos prepare stage failed", PaxosState.prepare(commit).promised);
+        assertTrue("paxos propose stage failed", PaxosState.propose(commit));
     }
 }

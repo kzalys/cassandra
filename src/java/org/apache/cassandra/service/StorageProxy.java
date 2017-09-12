@@ -65,6 +65,7 @@ import org.apache.cassandra.net.*;
 import org.apache.cassandra.service.paxos.Commit;
 import org.apache.cassandra.service.paxos.PaxosState;
 import org.apache.cassandra.service.paxos.PrepareCallback;
+import org.apache.cassandra.service.paxos.PrepareResponse;
 import org.apache.cassandra.service.paxos.ProposeCallback;
 import org.apache.cassandra.net.MessagingService.Verb;
 import org.apache.cassandra.tracing.Tracing;
@@ -473,7 +474,35 @@ public class StorageProxy implements StorageProxyMBean
         PrepareCallback callback = new PrepareCallback(toPrepare.update.partitionKey(), toPrepare.update.metadata(), requiredParticipants, consistencyForPaxos);
         MessageOut<Commit> message = new MessageOut<Commit>(MessagingService.Verb.PAXOS_PREPARE, toPrepare, Commit.serializer);
         for (InetAddress target : endpoints)
-            MessagingService.instance().sendRR(message, target, callback);
+        {
+            if (canDoLocalRequest(target))
+            {
+                StageManager.getStage(MessagingService.verbStages.get(MessagingService.Verb.PAXOS_PREPARE)).execute(new Runnable()
+                {
+                    public void run()
+                    {
+                        try
+                        {
+                            PrepareResponse response = PaxosState.prepare(toPrepare);
+                            MessageIn<PrepareResponse> message = MessageIn.create(FBUtilities.getBroadcastAddress(),
+                                    response,
+                                    Collections.<String, byte[]>emptyMap(),
+                                    MessagingService.Verb.INTERNAL_RESPONSE,
+                                    MessagingService.current_version);
+                            callback.response(message);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.error("Failed paxos prepare locally : {}", ex);
+                        }
+                    }
+                });
+            }
+            else
+            {
+                MessagingService.instance().sendRR(message, target, callback);
+            }
+        }
         callback.await();
         return callback;
     }
@@ -484,8 +513,35 @@ public class StorageProxy implements StorageProxyMBean
         ProposeCallback callback = new ProposeCallback(endpoints.size(), requiredParticipants, !timeoutIfPartial, consistencyLevel);
         MessageOut<Commit> message = new MessageOut<Commit>(MessagingService.Verb.PAXOS_PROPOSE, proposal, Commit.serializer);
         for (InetAddress target : endpoints)
-            MessagingService.instance().sendRR(message, target, callback);
-
+        {
+            if (canDoLocalRequest(target))
+            {
+                StageManager.getStage(MessagingService.verbStages.get(MessagingService.Verb.PAXOS_PROPOSE)).execute(new Runnable()
+                {
+                    public void run()
+                    {
+                        try
+                        {
+                            Boolean response = PaxosState.propose(proposal);
+                            MessageIn<Boolean> message = MessageIn.create(FBUtilities.getBroadcastAddress(),
+                                    response,
+                                    Collections.<String, byte[]>emptyMap(),
+                                    MessagingService.Verb.INTERNAL_RESPONSE,
+                                    MessagingService.current_version);
+                            callback.response(message);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.error("Failed paxos propose locally : {}", ex);
+                        }
+                    }
+                });
+            }
+            else
+            {
+                MessagingService.instance().sendRR(message, target, callback);
+            }
+        }
         callback.await();
 
         if (callback.isSuccessful())
