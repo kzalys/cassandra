@@ -1,4 +1,8 @@
 4.0
+ * Fix problem with min_compress_ratio: 1 and disallow ratio < 1 (CASSANDRA-13703)
+ * Add extra information to SASI timeout exception (CASSANDRA-13677)
+ * Add incremental repair support for --hosts, --force, and subrange repair (CASSANDRA-13818)
+ * Rework CompactionStrategyManager.getScanners synchronization (CASSANDRA-13786)
  * Add additional unit tests for batch behavior, TTLs, Timestamps (CASSANDRA-13846)
  * Add keyspace and table name in schema validation exception (CASSANDRA-13845)
  * Emit metrics whenever we hit tombstone failures and warn thresholds (CASSANDRA-13771)
@@ -144,6 +148,12 @@
  * Duplicate the buffer before passing it to analyser in SASI operation (CASSANDRA-13512)
  * Properly evict pstmts from prepared statements cache (CASSANDRA-13641)
 Merged from 3.0:
+ * Fix counter application order in short read protection (CASSANDRA-12872)
+ * Don't block RepairJob execution on validation futures (CASSANDRA-13797)
+ * Wait for all management tasks to complete before shutting down CLSM (CASSANDRA-13123)
+ * INSERT statement fails when Tuple type is used as clustering column with default DESC order (CASSANDRA-13717)
+ * Fix pending view mutations handling and cleanup batchlog when there are local and remote paired mutations (CASSANDRA-13069)
+ * Improve config validation and documentation on overflow and NPE (CASSANDRA-13622)
  * Range deletes in a CAS batch are ignored (CASSANDRA-13655)
  * Avoid assertion error when IndexSummary > 2G (CASSANDRA-12014)
  * Change repair midpoint logging for tiny ranges (CASSANDRA-13603)
@@ -177,6 +187,8 @@ Merged from 3.0:
  * Nodetool listsnapshots output is missing a newline, if there are no snapshots (CASSANDRA-13568)
  * sstabledump reports incorrect usage for argument order (CASSANDRA-13532)
 Merged from 2.2:
+ * Safely handle empty buffers when outputting to JSON (CASSANDRA-13868)
+ * Copy session properties on cqlsh.py do_login (CASSANDRA-13847)
  * Fix load over calculated issue in IndexSummaryRedistribution (CASSANDRA-13738)
  * Fix compaction and flush exception not captured (CASSANDRA-13833)
  * Uncaught exceptions in Netty pipeline (CASSANDRA-13649)
