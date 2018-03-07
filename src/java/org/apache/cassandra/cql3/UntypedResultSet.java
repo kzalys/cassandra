@@ -226,26 +226,46 @@ public abstract class UntypedResultSet implements Iterable<UntypedResultSet.Row>
 
         public boolean getBoolean(String column)
         {
+            if (!has(column))
+            {
+                throw new RuntimeException(String.format("column %s is not found", column));
+            }
             return BooleanType.instance.compose(data.get(column));
         }
 
         public byte getByte(String column)
         {
+            if (!has(column))
+            {
+                throw new RuntimeException(String.format("column %s is not found", column));
+            }
             return ByteType.instance.compose(data.get(column));
         }
 
         public short getShort(String column)
         {
+            if (!has(column))
+            {
+                throw new RuntimeException(String.format("column %s is not found", column));
+            }
             return ShortType.instance.compose(data.get(column));
         }
 
         public int getInt(String column)
         {
+            if (!has(column))
+            {
+                throw new RuntimeException(String.format("column %s is not found", column));
+            }
             return Int32Type.instance.compose(data.get(column));
         }
 
         public double getDouble(String column)
         {
+            if (!has(column))
+            {
+                throw new RuntimeException(String.format("column %s is not found", column));
+            }
             return DoubleType.instance.compose(data.get(column));
         }
 
@@ -271,6 +291,10 @@ public abstract class UntypedResultSet implements Iterable<UntypedResultSet.Row>
 
         public long getLong(String column)
         {
+            if (!has(column))
+            {
+                throw new RuntimeException(String.format("column %s is not found", column));
+            }
             return LongType.instance.compose(data.get(column));
         }
 

@@ -18,6 +18,7 @@
 package org.apache.cassandra.cql3.validation.operations;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.UUID;
 
 import org.junit.Test;
@@ -2704,5 +2705,51 @@ public class SelectTest extends CQLTester
                            row(bytes("foo123"), EMPTY_BYTE_BUFFER, bytes("1"), bytes("4")));
             }
         }
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testGetColumnsWithNullValues() throws Throwable
+    {
+        String schema = "CREATE TABLE %s ("
+                + "  k int PRIMARY KEY,"
+                + "  v1 int,"
+                + "  v2 double,"
+                + "  v3 boolean,"
+                + "  v4 tinyint,"
+                + "  v5 smallint,"
+                + "  v6 bigint,"
+                + ")";
+
+        createTable(schema);
+        execute("INSERT INTO %s (k, v1, v2, v3, v4, v5, v6) VALUES (0, 1, 2.0, true, 3, 4, 5);");
+        execute("INSERT INTO %s (k) VALUES (1);");
+
+        UntypedResultSet rs = execute("SELECT k, v1, v2, v3, v4, v5, v6 FROM %s where k = 0");
+        assertEquals(1, rs.size());
+
+        Iterator<UntypedResultSet.Row> iter = rs.iterator();
+        UntypedResultSet.Row row;
+
+        row = iter.next();
+        assertEquals(0, row.getInt("k"));
+        assertEquals(1, row.getInt("v1"));
+        assertEquals(2.0d, row.getDouble("v2"), 0.01);
+        assertEquals(true, row.getBoolean("v3"));
+        assertEquals(3, row.getByte("v4"));
+        assertEquals((short) 4, row.getShort("v5"));
+        assertEquals(5L, row.getLong("v6"));
+
+        rs = execute("SELECT k, v1, v2, v3, v4, v5, v6 FROM %s where k = 1");
+        assertEquals(1, rs.size());
+
+        iter = rs.iterator();
+        row = iter.next();
+        assertEquals(1, row.getInt("k"));
+        row.getInt("v1");
+        row.getDouble("v2");
+        row.getBoolean("v3");
+        row.getByte("v4");
+        row.getShort("v5");
+        row.getLong("v6");
     }
 }
