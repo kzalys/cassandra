@@ -22,12 +22,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.cassandra.SchemaLoader;
-import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.Mutation;
-import org.apache.cassandra.db.RowUpdateBuilder;
 import org.apache.cassandra.schema.KeyspaceParams;
 import org.apache.cassandra.utils.FBUtilities;
 import org.junit.BeforeClass;
@@ -193,24 +192,7 @@ public class HintsCatalogTest
 
     private static Mutation createMutation(String key, long now)
     {
-        Mutation mutation = new Mutation(KEYSPACE, dk(key));
-
-        new RowUpdateBuilder(Schema.instance.getCFMetaData(KEYSPACE, TABLE0), now, mutation)
-                .clustering("column0")
-                .add("val", "value0")
-                .build();
-
-        new RowUpdateBuilder(Schema.instance.getCFMetaData(KEYSPACE, TABLE1), now + 1, mutation)
-                .clustering("column1")
-                .add("val", "value1")
-                .build();
-
-        new RowUpdateBuilder(Schema.instance.getCFMetaData(KEYSPACE, TABLE2), now + 2, mutation)
-                .clustering("column2")
-                .add("val", "value2")
-                .build();
-
-        return mutation;
+        return HintsReaderTest.createMutation(0, TimeUnit.MILLISECONDS.toMicros(now), KEYSPACE, TABLE0);
     }
 
     @SuppressWarnings("EmptyTryBlock")
@@ -222,10 +204,12 @@ public class HintsCatalogTest
             try (HintsWriter.Session session = writer.newSession(writeBuffer))
             {
                 long now = FBUtilities.timestampMicros();
-                Mutation mutation = createMutation("testSerializer", now);
-                Hint hint = Hint.create(mutation, now / 1000);
-
-                session.append(hint);
+                for (int i = 0; i < 3; i++)
+                {
+                    Mutation mutation = createMutation("" + i, now);
+                    Hint hint = Hint.create(mutation, now / 1000);
+                    session.append(hint);
+                }
             }
         }
     }

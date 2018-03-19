@@ -63,7 +63,7 @@ public class HintsReaderTest
         descriptor = new HintsDescriptor(UUID.randomUUID(), System.currentTimeMillis());
     }
 
-    private static Mutation createMutation(int index, long timestamp, String ks, String tb)
+    public static Mutation createMutation(int index, long timestamp, String ks, String tb)
     {
         TableMetadata table = Schema.instance.getTableMetadata(ks, tb);
         return new RowUpdateBuilder(table, timestamp, bytes(index))

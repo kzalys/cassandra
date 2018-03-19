@@ -84,7 +84,7 @@ final class HintsStore
         return dispatchDequeue.size();
     }
 
-    InetAddress address()
+    InetAddressAndPort address()
     {
         return StorageService.instance.getEndpointForHostId(hostId);
     }
