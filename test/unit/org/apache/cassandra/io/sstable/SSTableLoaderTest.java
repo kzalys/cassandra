@@ -237,7 +237,6 @@ public class SSTableLoaderTest
         cfs.forceBlockingFlush(); // wait for sstables to be on disk else we won't be able to stream them
 
         final CountDownLatch latch = new CountDownLatch(1);
-        //SSTableLoader loader = new SSTableLoader(dataDir, new TestClient(), new OutputHandler.SystemOutput(false, false));
         SSTableLoader loader = new SSTableLoader(dataDir, new TestClient(), new OutputHandler.SystemOutput(false, false), 1, KEYSPACE2);
         loader.stream(Collections.emptySet(), completionStreamListener(latch)).get();
 
