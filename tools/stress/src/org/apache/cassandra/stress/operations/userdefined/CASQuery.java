@@ -20,106 +20,70 @@ package org.apache.cassandra.stress.operations.userdefined;
  * 
  */
 
-
-import com.datastax.driver.core.*;
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.LocalDate;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
 import org.antlr.runtime.RecognitionException;
 import org.apache.cassandra.cql3.CQLFragmentParser;
 import org.apache.cassandra.cql3.CqlParser;
 import org.apache.cassandra.cql3.conditions.ColumnCondition;
 import org.apache.cassandra.cql3.statements.ModificationStatement;
+import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.schema.ColumnMetadata;
+import org.apache.cassandra.stress.generate.DistributionFixed;
+import org.apache.cassandra.stress.generate.PartitionGenerator;
+import org.apache.cassandra.stress.generate.PartitionIterator;
 import org.apache.cassandra.stress.generate.Row;
+import org.apache.cassandra.stress.generate.SeedManager;
 import org.apache.cassandra.stress.generate.values.Generator;
+import org.apache.cassandra.stress.report.Timer;
+import org.apache.cassandra.stress.settings.StressSettings;
 import org.apache.cassandra.stress.util.JavaDriverClient;
 import org.apache.cassandra.utils.Pair;
 
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
 
-public class CASQueryDynamicConditions
+public class CASQuery extends SchemaStatement
 {
-    private final SchemaQuery schemaQuery;
-    private final String tableName;
+    final QueryUtil.ArgSelect argSelect;
+    final Object[][] randomBuffer;
+    final Random random = new Random();
     private List<Integer> keysIndex;
     private Map<Integer, Integer> casConditionArgFreqMap;
     private PreparedStatement casReadConditionStatement;
     private StringBuilder casReadConditionQuery;
 
-    CASQueryDynamicConditions(SchemaQuery schemaQuery, String tableName)
+    public CASQuery(Timer timer, StressSettings settings, PartitionGenerator generator, SeedManager seedManager, PreparedStatement statement, ConsistencyLevel cl, QueryUtil.ArgSelect argSelect, final String tableName)
     {
-        this.schemaQuery = schemaQuery;
-        this.tableName = tableName;
-        prepareCASDynamicConditionsReadStatement();
+        super(timer, settings, new DataSpec(generator, seedManager, new DistributionFixed(1), settings.insert.rowPopulationRatio.get(), argSelect == QueryUtil.ArgSelect.MULTIROW ? statement.getVariables().size() : 1), statement,
+                statement.getVariables().asList().stream().map(d -> d.getName()).collect(Collectors.toList()), cl);
+        this.argSelect = argSelect;
+        randomBuffer = new Object[argumentIndex.length][argumentIndex.length];
+
+        prepareCASDynamicConditionsReadStatement(tableName);
     }
 
-    public static boolean dynamicConditionExists(PreparedStatement statement) throws IllegalArgumentException
-    {
-        if (statement.getQueryString().toUpperCase().startsWith("UPDATE"))
-        {
-            ModificationStatement.Parsed modificationStatement = null;
-            try
-            {
-                modificationStatement = CQLFragmentParser.parseAnyUnhandled(CqlParser::updateStatement,
-                        statement.getQueryString());
-            }
-            catch (RecognitionException e)
-            {
-                e.printStackTrace();
-                throw new IllegalArgumentException("could not parse update query:" + statement.getQueryString());
-            }
-
-            List<Pair<ColumnMetadata.Raw, ColumnCondition.Raw>> casConditionList = modificationStatement.getConditions();
-            if (casConditionList.size() > 0)
-            {
-                /** here we differenciate between static condition vs dynamic condition
-                 *  static condition example: if col1 = NULL
-                 *  dynamic condition example: if col1 = ?
-                 *  for static condition we don't have to replace value, no extra work
-                 *  involved
-                 *  for dynamic condition we have to read existing db value and then
-                 *  use current db values during the update
-                 */
-                boolean conditionExpectsDynamicValue = false;
-                for (Pair<ColumnMetadata.Raw, ColumnCondition.Raw> condition : casConditionList)
-                {
-                    /**if condition is like a = 10 then condition.right has string value "NULL"
-                     * if condition is like a = ? then condition.right has string value "?"
-                     * so compare value "NULL" and see if this is a static condition or dynamic
-                     */
-                    if (condition.right.getValue().getText().equals("?"))
-                    {
-                        conditionExpectsDynamicValue = true;
-                        break;
-                    }
-                }
-                if (!conditionExpectsDynamicValue)
-                {
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private void prepareCASDynamicConditionsReadStatement()
+    private void prepareCASDynamicConditionsReadStatement(String tableName)
     {
         ModificationStatement.Parsed modificationStatement = null;
         try
         {
             modificationStatement = CQLFragmentParser.parseAnyUnhandled(CqlParser::updateStatement,
-                    schemaQuery.statement.getQueryString());
+                    statement.getQueryString());
         }
         catch (RecognitionException e)
         {
             e.printStackTrace();
-            throw new IllegalArgumentException("could not parse update query:" + schemaQuery.statement.getQueryString());
+            throw new IllegalArgumentException("could not parse update query:" + statement.getQueryString());
         }
         final List<Pair<ColumnMetadata.Raw, ColumnCondition.Raw>> casConditionList = modificationStatement.getConditions();
 
@@ -140,7 +104,7 @@ public class CASQueryDynamicConditions
                 casReadConditionQuery.append(", ");
             }
             casReadConditionQuery.append(condition.left.rawText());
-            casConditionIndex.add(schemaQuery.getDataSpecification().partitionGenerator.indexOf(condition.left.rawText()));
+            casConditionIndex.add(getDataSpecification().partitionGenerator.indexOf(condition.left.rawText()));
             first = false;
         }
         casReadConditionQuery.append(" FROM ");
@@ -149,7 +113,7 @@ public class CASQueryDynamicConditions
 
         first = true;
         keysIndex = new ArrayList<Integer>();
-        for (final Generator key : schemaQuery.getDataSpecification().partitionGenerator.partitionKey)
+        for (final Generator key : getDataSpecification().partitionGenerator.partitionKey)
         {
             if (!first)
             {
@@ -157,21 +121,21 @@ public class CASQueryDynamicConditions
             }
             casReadConditionQuery.append(key.name);
             casReadConditionQuery.append(" = ? ");
-            keysIndex.add(schemaQuery.getDataSpecification().partitionGenerator.indexOf(key.name));
+            keysIndex.add(getDataSpecification().partitionGenerator.indexOf(key.name));
             first = false;
         }
-        for (final Generator clusteringKey : schemaQuery.getDataSpecification().partitionGenerator.clusteringComponents)
+        for (final Generator clusteringKey : getDataSpecification().partitionGenerator.clusteringComponents)
         {
             casReadConditionQuery.append(" AND ");
             casReadConditionQuery.append(clusteringKey.name);
             casReadConditionQuery.append(" = ? ");
-            keysIndex.add(schemaQuery.getDataSpecification().partitionGenerator.indexOf(clusteringKey.name));
+            keysIndex.add(getDataSpecification().partitionGenerator.indexOf(clusteringKey.name));
         }
 
         casConditionArgFreqMap = new HashMap();
         for (final Integer oneConditionIndex : casConditionIndex)
         {
-            casConditionArgFreqMap.put(oneConditionIndex, (int) Arrays.stream(schemaQuery.argumentIndex).filter((x) -> x == oneConditionIndex).count());
+            casConditionArgFreqMap.put(oneConditionIndex, (int) Arrays.stream(argumentIndex).filter((x) -> x == oneConditionIndex).count());
         }
     }
 
@@ -179,14 +143,14 @@ public class CASQueryDynamicConditions
     {
         final Map<Integer, Integer> localMapping = new HashMap<>(casConditionIndexOccurences);
         int conditionIndexTracker = 0;
-        for (int i = 0; i < schemaQuery.argumentIndex.length; i++)
+        for (int i = 0; i < argumentIndex.length; i++)
         {
             boolean replace = false;
-            Integer count = localMapping.get(schemaQuery.argumentIndex[i]);
+            Integer count = localMapping.get(argumentIndex[i]);
             if (count != null)
             {
                 count--;
-                localMapping.put(schemaQuery.argumentIndex[i], count);
+                localMapping.put(argumentIndex[i], count);
                 if (count == 0)
                 {
                     replace = true;
@@ -195,39 +159,103 @@ public class CASQueryDynamicConditions
 
             if (replace)
             {
-                schemaQuery.bindBuffer[i] = casDbValues[conditionIndexTracker++];
+                bindBuffer[i] = casDbValues[conditionIndexTracker++];
             }
             else
             {
-                Object value = row.get(schemaQuery.argumentIndex[i]);
-                if (schemaQuery.definitions.getType(i).getName().equals(DataType.date().getName()))
+                Object value = row.get(argumentIndex[i]);
+                if (definitions.getType(i).getName().equals(DataType.date().getName()))
                 {
                     // the java driver only accepts com.datastax.driver.core.LocalDate for CQL type "DATE"
                     value = LocalDate.fromDaysSinceEpoch((Integer) value);
                 }
 
-                schemaQuery.bindBuffer[i] = value;
+                bindBuffer[i] = value;
             }
 
-            if (schemaQuery.bindBuffer[i] == null && !schemaQuery.getDataSpecification().partitionGenerator.permitNulls(schemaQuery.argumentIndex[i]))
+            if (bindBuffer[i] == null && !getDataSpecification().partitionGenerator.permitNulls(argumentIndex[i]))
             {
                 throw new IllegalStateException();
             }
         }
-        return schemaQuery.statement.bind(schemaQuery.bindBuffer);
+        return statement.bind(bindBuffer);
+    }
+
+    private class JavaDriverRun extends Runner
+    {
+        final JavaDriverClient client;
+
+        private JavaDriverRun(JavaDriverClient client)
+        {
+            this.client = client;
+        }
+
+        public boolean run() throws Exception
+        {
+            ResultSet rs = client.getSession().execute(bind(client));
+            rowCount = rs.all().size();
+            partitionCount = Math.min(1, rowCount);
+            return true;
+        }
+    }
+
+    private int fillRandom()
+    {
+        int c = 0;
+        PartitionIterator iterator = partitions.get(0);
+        while (iterator.hasNext())
+        {
+            Row row = iterator.next();
+            Object[] randomBufferRow = randomBuffer[c++];
+            for (int i = 0; i < argumentIndex.length; i++)
+            {
+                randomBufferRow[i] = row.get(argumentIndex[i]);
+            }
+            if (c >= randomBuffer.length)
+            {
+                break;
+            }
+        }
+        assert c > 0;
+        return c;
+    }
+
+    BoundStatement bindArgs()
+    {
+        switch (argSelect)
+        {
+            case MULTIROW:
+                int c = fillRandom();
+                for (int i = 0; i < argumentIndex.length; i++)
+                {
+                    int argIndex = argumentIndex[i];
+                    bindBuffer[i] = randomBuffer[argIndex < 0 ? 0 : random.nextInt(c)][i];
+                }
+                return statement.bind(bindBuffer);
+            case SAMEROW:
+                return bindRow(partitions.get(0).next());
+            default:
+                throw new IllegalStateException();
+        }
+    }
+
+    @Override
+    public void run(JavaDriverClient client) throws IOException
+    {
+        timeWithRetry(new JavaDriverRun(client));
     }
 
     BoundStatement bind(JavaDriverClient client)
     {
         //get current db values for all the coluns which are part of dynamic conditions
         ResultSet rs;
-        if (schemaQuery.argSelect != SchemaQuery.ArgSelect.SAMEROW)
+        if (argSelect != QueryUtil.ArgSelect.SAMEROW)
         {
             throw new IllegalArgumentException("CAS is supported only for type 'samerow'");
         }
         if (casReadConditionStatement == null)
         {
-            synchronized (CASQueryDynamicConditions.this)
+            synchronized (org.apache.cassandra.stress.operations.userdefined.CASQuery.this)
             {
                 if (casReadConditionStatement == null)
                 {
@@ -236,7 +264,7 @@ public class CASQueryDynamicConditions
             }
         }
         final Object keys[] = new Object[keysIndex.size()];
-        final Row row = schemaQuery.getPartitions().get(0).next();
+        final Row row = getPartitions().get(0).next();
 
         for (int i = 0; i < keysIndex.size(); i++)
         {

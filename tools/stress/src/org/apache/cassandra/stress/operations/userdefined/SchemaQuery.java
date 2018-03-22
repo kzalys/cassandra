@@ -36,35 +36,16 @@ import org.apache.cassandra.stress.util.JavaDriverClient;
 
 public class SchemaQuery extends SchemaStatement
 {
-    public static enum ArgSelect
-    {
-        MULTIROW, SAMEROW;
-        //TODO: FIRSTROW, LASTROW
-    }
-
-    final ArgSelect argSelect;
+    final QueryUtil.ArgSelect argSelect;
     final Object[][] randomBuffer;
     final Random random = new Random();
-    CASQueryDynamicConditions casQueryDynamicConditions;
 
-    public SchemaQuery(Timer timer, StressSettings settings, PartitionGenerator generator, SeedManager seedManager, PreparedStatement statement, ConsistencyLevel cl, ArgSelect argSelect, final String tableName)
+    public SchemaQuery(Timer timer, StressSettings settings, PartitionGenerator generator, SeedManager seedManager, PreparedStatement statement, ConsistencyLevel cl, QueryUtil.ArgSelect argSelect)
     {
-        super(timer, settings, new DataSpec(generator, seedManager, new DistributionFixed(1), settings.insert.rowPopulationRatio.get(), argSelect == ArgSelect.MULTIROW ? statement.getVariables().size() : 1), statement,
+        super(timer, settings, new DataSpec(generator, seedManager, new DistributionFixed(1), settings.insert.rowPopulationRatio.get(), argSelect == QueryUtil.ArgSelect.MULTIROW ? statement.getVariables().size() : 1), statement,
               statement.getVariables().asList().stream().map(d -> d.getName()).collect(Collectors.toList()), cl);
         this.argSelect = argSelect;
         randomBuffer = new Object[argumentIndex.length][argumentIndex.length];
-
-        /**check if given query is cas or not
-         * if it is a cas query then we first read db value of all CAS condition
-         * columns and then use given db value during the update operation
-         * so CAS will be executed like:
-         * 1. select {CAS condition columns} from {table}
-         * 2. update {table} set {columns} where {condition} IF {CAS condition columns}
-         */
-        if (CASQueryDynamicConditions.dynamicConditionExists(statement))
-        {
-            casQueryDynamicConditions = new CASQueryDynamicConditions(this, tableName);
-        }
     }
 
     private class JavaDriverRun extends Runner
@@ -78,18 +59,7 @@ public class SchemaQuery extends SchemaStatement
 
         public boolean run() throws Exception
         {
-            BoundStatement boundStatement;
-
-            if (casQueryDynamicConditions != null)
-            {
-                boundStatement = casQueryDynamicConditions.bind(client);
-                //TODO: we can check 'applied' status here and retry configurable number of times
-            }
-            else
-            {
-                boundStatement = bindArgs();
-            }
-            ResultSet rs = client.getSession().execute(boundStatement);
+            ResultSet rs = client.getSession().execute(bindArgs());
             rowCount = rs.all().size();
             partitionCount = Math.min(1, rowCount);
             return true;
