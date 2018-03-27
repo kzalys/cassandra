@@ -39,8 +39,8 @@ public class PartitionGenerator
 
     public final double maxRowCount;
     public final double minRowCount;
-    public final List<Generator> partitionKey;
-    public final List<Generator> clusteringComponents;
+    final List<Generator> partitionKey;
+    final List<Generator> clusteringComponents;
     final List<Generator> valueComponents;
     final int[] clusteringDescendantAverages;
     final int[] clusteringComponentAverages;
@@ -81,6 +81,16 @@ public class PartitionGenerator
     public boolean permitNulls(int index)
     {
         return !(index < 0 || index < clusteringComponents.size());
+    }
+
+    public List<Generator> getPartitionKey()
+    {
+        return Collections.unmodifiableList(partitionKey);
+    }
+
+    public List<Generator> getClusteringComponents()
+    {
+        return Collections.unmodifiableList(clusteringComponents);
     }
 
     public int indexOf(String name)

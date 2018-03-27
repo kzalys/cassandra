@@ -34,7 +34,6 @@ import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.schema.ColumnMetadata;
 import org.apache.cassandra.stress.generate.DistributionFixed;
 import org.apache.cassandra.stress.generate.PartitionGenerator;
-import org.apache.cassandra.stress.generate.PartitionIterator;
 import org.apache.cassandra.stress.generate.Row;
 import org.apache.cassandra.stress.generate.SeedManager;
 import org.apache.cassandra.stress.generate.values.Generator;
@@ -49,14 +48,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 public class CASQuery extends SchemaStatement
 {
     final QueryUtil.ArgSelect argSelect;
-    final Object[][] randomBuffer;
-    final Random random = new Random();
     private List<Integer> keysIndex;
     private Map<Integer, Integer> casConditionArgFreqMap;
     private PreparedStatement casReadConditionStatement;
@@ -67,14 +63,13 @@ public class CASQuery extends SchemaStatement
         super(timer, settings, new DataSpec(generator, seedManager, new DistributionFixed(1), settings.insert.rowPopulationRatio.get(), argSelect == QueryUtil.ArgSelect.MULTIROW ? statement.getVariables().size() : 1), statement,
                 statement.getVariables().asList().stream().map(d -> d.getName()).collect(Collectors.toList()), cl);
         this.argSelect = argSelect;
-        randomBuffer = new Object[argumentIndex.length][argumentIndex.length];
 
         prepareCASDynamicConditionsReadStatement(tableName);
     }
 
     private void prepareCASDynamicConditionsReadStatement(String tableName)
     {
-        ModificationStatement.Parsed modificationStatement = null;
+        ModificationStatement.Parsed modificationStatement;
         try
         {
             modificationStatement = CQLFragmentParser.parseAnyUnhandled(CqlParser::updateStatement,
@@ -87,7 +82,7 @@ public class CASQuery extends SchemaStatement
         }
         final List<Pair<ColumnMetadata.Raw, ColumnCondition.Raw>> casConditionList = modificationStatement.getConditions();
 
-        List<Integer> casConditionIndex = new ArrayList<Integer>();
+        List<Integer> casConditionIndex = new ArrayList<>();
 
         boolean first = true;
         casReadConditionQuery = new StringBuilder();
@@ -112,8 +107,8 @@ public class CASQuery extends SchemaStatement
         casReadConditionQuery.append(" WHERE ");
 
         first = true;
-        keysIndex = new ArrayList<Integer>();
-        for (final Generator key : getDataSpecification().partitionGenerator.partitionKey)
+        keysIndex = new ArrayList<>();
+        for (final Generator key : getDataSpecification().partitionGenerator.getPartitionKey())
         {
             if (!first)
             {
@@ -124,7 +119,7 @@ public class CASQuery extends SchemaStatement
             keysIndex.add(getDataSpecification().partitionGenerator.indexOf(key.name));
             first = false;
         }
-        for (final Generator clusteringKey : getDataSpecification().partitionGenerator.clusteringComponents)
+        for (final Generator clusteringKey : getDataSpecification().partitionGenerator.getClusteringComponents())
         {
             casReadConditionQuery.append(" AND ");
             casReadConditionQuery.append(clusteringKey.name);
@@ -132,10 +127,10 @@ public class CASQuery extends SchemaStatement
             keysIndex.add(getDataSpecification().partitionGenerator.indexOf(clusteringKey.name));
         }
 
-        casConditionArgFreqMap = new HashMap();
+        casConditionArgFreqMap = new HashMap<>();
         for (final Integer oneConditionIndex : casConditionIndex)
         {
-            casConditionArgFreqMap.put(oneConditionIndex, (int) Arrays.stream(argumentIndex).filter((x) -> x == oneConditionIndex).count());
+            casConditionArgFreqMap.put(oneConditionIndex, Math.toIntExact(Arrays.stream(argumentIndex).filter((x) -> x == oneConditionIndex).count()));
         }
     }
 
@@ -196,46 +191,6 @@ public class CASQuery extends SchemaStatement
             rowCount = rs.all().size();
             partitionCount = Math.min(1, rowCount);
             return true;
-        }
-    }
-
-    private int fillRandom()
-    {
-        int c = 0;
-        PartitionIterator iterator = partitions.get(0);
-        while (iterator.hasNext())
-        {
-            Row row = iterator.next();
-            Object[] randomBufferRow = randomBuffer[c++];
-            for (int i = 0; i < argumentIndex.length; i++)
-            {
-                randomBufferRow[i] = row.get(argumentIndex[i]);
-            }
-            if (c >= randomBuffer.length)
-            {
-                break;
-            }
-        }
-        assert c > 0;
-        return c;
-    }
-
-    BoundStatement bindArgs()
-    {
-        switch (argSelect)
-        {
-            case MULTIROW:
-                int c = fillRandom();
-                for (int i = 0; i < argumentIndex.length; i++)
-                {
-                    int argIndex = argumentIndex[i];
-                    bindBuffer[i] = randomBuffer[argIndex < 0 ? 0 : random.nextInt(c)][i];
-                }
-                return statement.bind(bindBuffer);
-            case SAMEROW:
-                return bindRow(partitions.get(0).next());
-            default:
-                throw new IllegalStateException();
         }
     }
 

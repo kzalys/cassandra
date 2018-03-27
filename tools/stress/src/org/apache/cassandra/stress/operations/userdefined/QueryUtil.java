@@ -58,7 +58,7 @@ public class QueryUtil
             List<Pair<ColumnMetadata.Raw, ColumnCondition.Raw>> casConditionList = modificationStatement.getConditions();
             if (casConditionList.size() > 0)
             {
-                /** here we differenciate between static condition vs dynamic condition
+                /** here we differentiate between static condition vs dynamic condition
                  *  static condition example: if col1 = NULL
                  *  dynamic condition example: if col1 = ?
                  *  for static condition we don't have to replace value, no extra work
