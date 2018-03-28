@@ -221,10 +221,10 @@ This will run operations as specified in both the example.yaml and example2.yaml
  although care must be taken that the table definition is identical (data generation specs can be different).
 
 Lightweight transaction support
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++++++++++++++
 
-cassandra-stress supports lightweight transactions. In this it will first read current data from Cassandra and then uses read value(s) as
-part of lightweight condition(s).
+cassandra-stress supports lightweight transactions. In this it will first read current data from Cassandra and then uses read value(s)
+to fulfill lightweight transaction condition(s).
 
 Lightweight transaction update query::
 
