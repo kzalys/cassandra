@@ -28,6 +28,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.cassandra.config.*;
 import org.apache.cassandra.db.filter.*;
 import org.apache.cassandra.db.monitoring.ApproximateTime;
+import org.apache.cassandra.db.monitoring.BadQuery;
+import org.apache.cassandra.db.monitoring.MonitorableImpl;
 import org.apache.cassandra.db.partitions.*;
 import org.apache.cassandra.db.rows.*;
 import org.apache.cassandra.db.transform.StoppingTransformation;
@@ -336,6 +338,7 @@ public abstract class ReadCommand extends AbstractReadQuery
 
             private int liveRows = 0;
             private int tombstones = 0;
+            private int size = 0;
 
             private DecoratedKey currentKey;
 
@@ -363,6 +366,7 @@ public abstract class ReadCommand extends AbstractReadQuery
                         countTombstone(row.clustering());
                         hasTombstones = true; // allows to avoid counting an extra tombstone if the whole row expired
                     }
+                    size += cell.dataSize();
                 }
 
                 if (row.hasLiveData(ReadCommand.this.nowInSec(), enforceStrictLiveness))
@@ -400,12 +404,16 @@ public abstract class ReadCommand extends AbstractReadQuery
             @Override
             public void onClose()
             {
-                recordLatency(metric, System.nanoTime() - startTimeNanos);
+                long duration = System.nanoTime() - startTimeNanos;
+                recordLatency(metric, duration);
 
                 metric.tombstoneScannedHistogram.update(tombstones);
                 metric.liveScannedHistogram.update(liveRows);
 
                 boolean warnTombstones = tombstones > warningThreshold && respectTombstoneThresholds;
+                BadQuery.checkForTooManyTombstones(ReadCommand.this, tombstones);
+                BadQuery.checkForLargeRead(ReadCommand.this, size);
+                BadQuery.checkForSlowLocalRead(ReadCommand.this, duration);
                 if (warnTombstones)
                 {
                     String msg = String.format(
@@ -492,6 +500,7 @@ public abstract class ReadCommand extends AbstractReadQuery
 
     protected abstract void appendCQLWhereClause(StringBuilder sb);
 
+    public abstract String getKey();
     // Skip purgeable tombstones. We do this because it's safe to do (post-merge of the memtable and sstable at least), it
     // can save us some bandwith, and avoid making us throw a TombstoneOverwhelmingException for purgeable tombstones (which
     // are to some extend an artefact of compaction lagging behind and hence counting them is somewhat unintuitive).

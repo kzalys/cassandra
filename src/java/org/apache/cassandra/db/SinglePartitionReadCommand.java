@@ -983,7 +983,7 @@ public class SinglePartitionReadCommand extends ReadCommand implements SinglePar
         sb.append(" WHERE ");
 
         sb.append(ColumnMetadata.toCQLString(metadata().partitionKeyColumns())).append(" = ");
-        DataRange.appendKeyString(sb, metadata().partitionKeyType, partitionKey().getKey());
+        DataRange.appendKeyString(sb, metadata().partitionKeyType, partitionKey().getKey(), ", ");
 
         // We put the row filter first because the clustering index filter can end by "ORDER BY"
         if (!rowFilter().isEmpty())
@@ -992,6 +992,13 @@ public class SinglePartitionReadCommand extends ReadCommand implements SinglePar
         String filterString = clusteringIndexFilter().toCQLString(metadata());
         if (!filterString.isEmpty())
             sb.append(" AND ").append(filterString);
+    }
+
+    public String getKey()
+    {
+        StringBuilder sb = new StringBuilder();
+        DataRange.appendKeyString(sb, metadata().partitionKeyType, partitionKey().getKey(), ":");
+        return sb.toString();
     }
 
     protected void serializeSelection(DataOutputPlus out, int version) throws IOException

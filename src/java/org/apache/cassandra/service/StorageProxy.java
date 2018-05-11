@@ -56,6 +56,8 @@ import org.apache.cassandra.schema.SchemaConstants;
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.filter.DataLimits;
 import org.apache.cassandra.db.filter.TombstoneOverwhelmingException;
+import org.apache.cassandra.db.fullquerylog.FullQueryLogger;
+import org.apache.cassandra.db.monitoring.BadQuery;
 import org.apache.cassandra.db.partitions.*;
 import org.apache.cassandra.db.rows.RowIterator;
 import org.apache.cassandra.db.view.ViewUtils;
@@ -757,6 +759,8 @@ public class StorageProxy implements StorageProxyMBean
             writeMetrics.addNano(latency);
             writeMetricsMap.get(consistency_level).addNano(latency);
             updateCoordinatorWriteLatencyTableMetric(mutations, latency);
+            writeMetrics.addNano(latency);
+            BadQuery.checkForSlowCoordinatorWrite(mutations, latency);
         }
     }
 
@@ -1763,6 +1767,7 @@ public class StorageProxy implements StorageProxyMBean
             // TODO avoid giving every command the same latency number.  Can fix this in CASSADRA-5329
             for (ReadCommand command : group.queries)
                 Keyspace.openAndGetStore(command.metadata()).metric.coordinatorReadLatency.update(latency, TimeUnit.NANOSECONDS);
+            BadQuery.checkForSlowCoordinatorRead(group.commands, latency);
         }
     }
 

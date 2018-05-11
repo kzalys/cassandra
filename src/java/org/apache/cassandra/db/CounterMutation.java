@@ -77,6 +77,16 @@ public class CounterMutation implements IMutation
         return mutation.getPartitionUpdates();
     }
 
+    public Collection<String> getTableNames()
+    {
+        return mutation.getTableNames();
+    }
+
+    public String getKey()
+    {
+        return mutation.getKey();
+    }
+
     public Mutation getMutation()
     {
         return mutation;

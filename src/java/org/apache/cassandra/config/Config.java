@@ -383,6 +383,35 @@ public class Config
 
     public volatile AuditLogOptions audit_logging_options = new AuditLogOptions();
 
+    /*default reporting is in syslog file, one can override this behavior
++    by providing different implementation for reporting*/
+    public String bad_query_reporter;
+
+    public Boolean bad_query_tracing_enabled = false;
+
+    public Integer bad_query_logging_interval_in_s = 15 * 60;
+
+    public Integer bad_query_max_samples_per_interval_in_syslog = 5;
+
+    public Double bad_query_tracing_fraction = 0.25;
+
+    public Long bad_query_read_max_partitionsize_in_bytes = 50 * 1024 * 1024L;
+
+    public Long bad_query_write_max_partitionsize_in_bytes = 50 * 1024 * 1024L;
+
+    public Integer bad_query_read_slow_local_latency_in_ms = 100;
+
+    public Integer bad_query_write_slow_local_latency_in_ms = 100;
+
+    public Integer bad_query_read_slow_coord_latency_in_ms = 200;
+
+    public Integer bad_query_write_slow_coord_latency_in_ms = 200;
+
+    public Integer bad_query_tombstone_limit = 1000;
+
+    public String bad_query_ignore_keyspaces = "";
+
+
     public CorruptedTombstoneStrategy corrupted_tombstone_strategy = CorruptedTombstoneStrategy.disabled;
     /**
      * @deprecated migrate to {@link DatabaseDescriptor#isClientInitialized()}

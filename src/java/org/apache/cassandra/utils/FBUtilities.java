@@ -50,6 +50,7 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.db.SerializationHeader;
 import org.apache.cassandra.db.marshal.AbstractType;
+import org.apache.cassandra.db.monitoring.IBadQueryReporter;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.LocalPartitioner;
 import org.apache.cassandra.dht.Range;
@@ -549,6 +550,13 @@ public class FBUtilities
             return false;
         }
         return true;
+    }
+
+    public static IBadQueryReporter newBadQueryReporter(String className) throws ConfigurationException
+    {
+        if (!className.contains("."))
+            className = "org.apache.cassandra.db.monitoring." + className;
+        return FBUtilities.construct(className, "badquery reporter");
     }
 
     /**

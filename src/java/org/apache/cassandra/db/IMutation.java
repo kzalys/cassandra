@@ -31,6 +31,8 @@ public interface IMutation
     public long getTimeout();
     public String toString(boolean shallow);
     public Collection<PartitionUpdate> getPartitionUpdates();
+    public Collection<String> getTableNames();
+    public String getKey();
 
     public default void validateIndexedColumns()
     {

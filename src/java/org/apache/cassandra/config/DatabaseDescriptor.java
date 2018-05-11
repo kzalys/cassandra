@@ -48,7 +48,11 @@ import org.apache.cassandra.auth.IRoleManager;
 import org.apache.cassandra.config.Config.CommitLogSync;
 import org.apache.cassandra.config.EncryptionOptions.ServerEncryptionOptions.InternodeEncryption;
 import org.apache.cassandra.db.ConsistencyLevel;
+import org.apache.cassandra.db.monitoring.BadQueriesInSystemLog;
+import org.apache.cassandra.db.monitoring.BadQueriesInTable;
+import org.apache.cassandra.db.monitoring.IBadQueryReporter;
 import org.apache.cassandra.dht.IPartitioner;
+
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.io.FSWriteError;
 import org.apache.cassandra.io.util.DiskOptimizationStrategy;
@@ -126,6 +130,8 @@ public class DatabaseDescriptor
     private static boolean clientInitialized;
     private static boolean toolInitialized;
     private static boolean daemonInitialized;
+
+    private static IBadQueryReporter badQueryReporter;
 
     private static final int searchConcurrencyFactor = Integer.parseInt(System.getProperty(Config.PROPERTY_PREFIX + "search_concurrency_factor", "1"));
 
@@ -752,6 +758,11 @@ public class DatabaseDescriptor
             throw new ConfigurationException("otc_coalescing_enough_coalesced_messages must be positive", false);
 
         validateMaxConcurrentAutoUpgradeTasksConf(conf.max_concurrent_automatic_sstable_upgrades);
+
+        if (conf.bad_query_reporter != null)
+            badQueryReporter = FBUtilities.newBadQueryReporter(conf.bad_query_reporter);
+        else
+            badQueryReporter = new BadQueriesInSystemLog();
     }
 
     private static String storagedirFor(String type)
@@ -1196,6 +1207,24 @@ public class DatabaseDescriptor
     public static void setMaxValueSize(int maxValueSizeInBytes)
     {
         conf.max_value_size_in_mb = maxValueSizeInBytes / 1024 / 1024;
+    }
+
+    public static IBadQueryReporter getBadQueryReporter()
+    {
+        return badQueryReporter;
+    }
+
+    @VisibleForTesting
+    public static void setBadQueryReporter(String reporter)
+    {
+        if (reporter.equals("BadQueriesInTable"))
+        {
+            badQueryReporter = new BadQueriesInTable();
+        }
+        else if (reporter.equals("BadQueriesInSystemLog"))
+        {
+            badQueryReporter = new BadQueriesInSystemLog();
+        }
     }
 
     /**
@@ -2605,5 +2634,70 @@ public class DatabaseDescriptor
     public static void setCorruptedTombstoneStrategy(Config.CorruptedTombstoneStrategy strategy)
     {
         conf.corrupted_tombstone_strategy = strategy;
+    }
+
+    public static void setBadQueryTracingStatus(Boolean tracingStatus)
+    {
+        conf.bad_query_tracing_enabled = tracingStatus;
+    }
+
+    public static boolean isBadQueryTracingEnabled()
+    {
+        return conf.bad_query_tracing_enabled;
+    }
+
+    public static int getBadQueryLoggingInterval()
+    {
+        return conf.bad_query_logging_interval_in_s;
+    }
+
+    public static int getBadQueryMaxSamplesPerIntervalInSyslog()
+    {
+        return conf.bad_query_max_samples_per_interval_in_syslog;
+    }
+
+    public static Double getBadQueryTracingFraction()
+    {
+        return conf.bad_query_tracing_fraction;
+    }
+
+    public static Long getBadQueryReadMaxPartitionsizeInBytes()
+    {
+        return conf.bad_query_read_max_partitionsize_in_bytes;
+    }
+
+    public static Long getBadQueryWriteMaxPartitionSizeInBytes()
+    {
+        return conf.bad_query_write_max_partitionsize_in_bytes;
+    }
+
+    public static Integer getBadQueryReadSlowLocalLatencyInMs()
+    {
+        return conf.bad_query_read_slow_local_latency_in_ms;
+    }
+
+    public static Integer getBadQueryWriteSlowLocalLatencyInMs()
+    {
+        return conf.bad_query_write_slow_local_latency_in_ms;
+    }
+
+    public static Integer getBadQueryReadSlowCoordLatenchInMs()
+    {
+        return conf.bad_query_read_slow_coord_latency_in_ms;
+    }
+
+    public static Integer getBadQueryWriteSlowCoordLatencyInMs()
+    {
+        return conf.bad_query_write_slow_coord_latency_in_ms;
+    }
+
+    public static Integer getBadQueryTombstoneLimit()
+    {
+        return conf.bad_query_tombstone_limit;
+    }
+
+    public static String getBadQueryIgnoreKeyspaces()
+    {
+        return conf.bad_query_ignore_keyspaces;
     }
 }

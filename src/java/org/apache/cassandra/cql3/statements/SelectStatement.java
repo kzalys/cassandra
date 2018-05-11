@@ -22,6 +22,7 @@ import java.util.*;
 
 import com.google.common.base.MoreObjects;
 
+import org.apache.cassandra.db.monitoring.BadQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -223,6 +224,7 @@ public class SelectStatement implements CQLStatement
     {
         ConsistencyLevel cl = options.getConsistency();
         checkNotNull(cl, "Invalid empty consistency level");
+        BadQuery.checkForCLSettings(this.table, options.getConsistency());
 
         cl.validateForRead(keyspace());
 

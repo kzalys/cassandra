@@ -282,7 +282,8 @@ public class DataRange
         if (pos instanceof DecoratedKey)
         {
             sb.append("token(");
-            appendKeyString(sb, metadata.partitionKeyType, ((DecoratedKey)pos).getKey());
+            appendKeyString(sb, metadata.partitionKeyType, ((DecoratedKey)pos).getKey(), ", ");
+
             sb.append(")");
         }
         else
@@ -300,14 +301,14 @@ public class DataRange
 
     // TODO: this is reused in SinglePartitionReadCommand but this should not really be here. Ideally
     // we need a more "native" handling of composite partition keys.
-    public static void appendKeyString(StringBuilder sb, AbstractType<?> type, ByteBuffer key)
+    public static void appendKeyString(StringBuilder sb, AbstractType<?> type, ByteBuffer key, String keySeparator)
     {
         if (type instanceof CompositeType)
         {
             CompositeType ct = (CompositeType)type;
             ByteBuffer[] values = ct.split(key);
             for (int i = 0; i < ct.types.size(); i++)
-                sb.append(i == 0 ? "" : ", ").append(ct.types.get(i).getString(values[i]));
+                sb.append(i == 0 ? "" : keySeparator).append(ct.types.get(i).getString(values[i]));
         }
         else
         {

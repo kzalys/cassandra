@@ -80,9 +80,11 @@ import org.apache.cassandra.service.CacheService;
 import org.apache.cassandra.service.CacheServiceMBean;
 import org.apache.cassandra.service.GCInspector;
 import org.apache.cassandra.service.GCInspectorMXBean;
+import org.apache.cassandra.service.MonitoringServiceMBean;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageProxyMBean;
 import org.apache.cassandra.service.StorageServiceMBean;
+
 import org.apache.cassandra.streaming.StreamManagerMBean;
 import org.apache.cassandra.streaming.StreamState;
 import org.apache.cassandra.streaming.management.StreamStateCompositeData;
@@ -104,6 +106,7 @@ public class NodeProbe implements AutoCloseable
 {
     private static final String fmtUrl = "service:jmx:rmi:///jndi/rmi://[%s]:%d/jmxrmi";
     private static final String ssObjName = "org.apache.cassandra.db:type=StorageService";
+    private static final String mnObjName = "org.apache.cassandra.db:type=MonitoringService";
     private static final int defaultPort = 7199;
 
     static long JMX_NOTIFICATION_POLL_INTERVAL_SECONDS = Long.getLong("cassandra.nodetool.jmx_notification_poll_interval_seconds", TimeUnit.SECONDS.convert(5, TimeUnit.MINUTES));
@@ -117,6 +120,7 @@ public class NodeProbe implements AutoCloseable
     private MBeanServerConnection mbeanServerConn;
     private CompactionManagerMBean compactionProxy;
     private StorageServiceMBean ssProxy;
+    private MonitoringServiceMBean monitoringProxy;
     private GossiperMBean gossProxy;
     private MemoryMXBean memProxy;
     private GCInspectorMXBean gcProxy;
@@ -201,6 +205,8 @@ public class NodeProbe implements AutoCloseable
         {
             ObjectName name = new ObjectName(ssObjName);
             ssProxy = JMX.newMBeanProxy(mbeanServerConn, name, StorageServiceMBean.class);
+            name = new ObjectName(mnObjName);
+            monitoringProxy = JMX.newMBeanProxy(mbeanServerConn, name, MonitoringServiceMBean.class);
             name = new ObjectName(MessagingService.MBEAN_NAME);
             msProxy = JMX.newMBeanProxy(mbeanServerConn, name, MessagingServiceMBean.class);
             name = new ObjectName(StreamManagerMBean.OBJECT_NAME);
@@ -1682,7 +1688,112 @@ public class NodeProbe implements AutoCloseable
     {
         ssProxy.clearConnectionHistory();
     }
-    
+
+    public int getBadQueryMaxSamplesInSyslog()
+    {
+        return monitoringProxy.getBadQueryMaxSamplesInSyslog();
+    }
+
+    public void setBadQueryMaxSamplesInSyslog(int badQueryMaxSamplesInSyslog)
+    {
+        monitoringProxy.setBadQueryMaxSamplesInSyslog(badQueryMaxSamplesInSyslog);
+    }
+
+    public boolean isBadQueryTracingEnabled()
+    {
+        return monitoringProxy.getBadQueryTracingStatus();
+    }
+
+    public double getBadQueryTracingFraction()
+    {
+        return monitoringProxy.getBadQueryTracingFraction();
+    }
+
+    public void setBadQueryTracingFraction(double badQueryTracingFraction)
+    {
+        monitoringProxy.setBadQueryTracingFraction(badQueryTracingFraction);
+    }
+
+    public long getBadQueryReadMaxPartitionSizeInbytes()
+    {
+        return monitoringProxy.getBadQueryReadMaxPartitionSizeInbytes();
+    }
+
+    public void setBadQueryReadMaxPartitionSizeInbytes(long badQueryReadMaxPartitionSizeInbytes)
+    {
+        monitoringProxy.setBadQueryReadMaxPartitionSizeInbytes(badQueryReadMaxPartitionSizeInbytes);
+    }
+
+    public long getBadQueryWriteMaxPartitionSizeInbytes()
+    {
+        return monitoringProxy.getBadQueryWriteMaxPartitionSizeInbytes();
+    }
+
+    public void setBadQueryWriteMaxPartitionSizeInbytes(long badQueryWriteMaxPartitionSizeInbytes)
+    {
+        monitoringProxy.setBadQueryWriteMaxPartitionSizeInbytes(badQueryWriteMaxPartitionSizeInbytes);
+    }
+
+    public int getBadQueryReadSlowLocalLatencyInms()
+    {
+        return monitoringProxy.getBadQueryReadSlowLocalLatencyInms();
+    }
+
+    public void setBadQueryReadSlowLocalLatencyInms(int badQueryReadSlowLocalLatencyInms)
+    {
+        monitoringProxy.setBadQueryReadSlowLocalLatencyInms(badQueryReadSlowLocalLatencyInms);
+    }
+
+    public int getBadQueryWriteSlowLocalLatencyInms()
+    {
+        return monitoringProxy.getBadQueryWriteSlowLocalLatencyInms();
+    }
+
+    public void setBadQueryWriteSlowLocalLatencyInms(int badQueryWriteSlowLocalLatencyInms)
+    {
+        monitoringProxy.setBadQueryWriteSlowLocalLatencyInms(badQueryWriteSlowLocalLatencyInms);
+    }
+
+    public int getBadQueryReadSlowCoordLatencyInms()
+    {
+        return monitoringProxy.getBadQueryReadSlowCoordLatencyInms();
+    }
+
+    public void setBadQueryReadSlowCoordLatencyInms(int badQueryReadSlowCoordLatencyInms)
+    {
+        monitoringProxy.setBadQueryReadSlowCoordLatencyInms(badQueryReadSlowCoordLatencyInms);
+    }
+
+    public int getBadQueryWriteSlowCoordLatencyInms()
+    {
+        return monitoringProxy.getBadQueryWriteSlowCoordLatencyInms();
+    }
+
+    public void setBadQueryWriteSlowCoordLatencyInms(int badQueryWriteSlowLocalLatencyInms)
+    {
+        monitoringProxy.setBadQueryWriteSlowCoordLatencyInms(badQueryWriteSlowLocalLatencyInms);
+    }
+
+    public int getBadQueryTombstoneLimit()
+    {
+        return monitoringProxy.getBadQueryTombstoneLimit();
+    }
+
+    public void setBadQueryTombstoneLimit(int badQueryTombstoneLimit)
+    {
+        monitoringProxy.setBadQueryTombstoneLimit(badQueryTombstoneLimit);
+    }
+
+    public String getBadQueryIgnoreKeyspaces()
+    {
+        return monitoringProxy.getBadQueryIgnoreKeyspaces();
+    }
+
+    public void setBadQueryIgnoreKeyspaces(String badQueryIgnoreKeyspaces)
+    {
+        monitoringProxy.setBadQueryIgnoreKeyspaces(badQueryIgnoreKeyspaces);
+    }
+
     public void disableAuditLog()
     {
         ssProxy.disableAuditLog();

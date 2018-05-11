@@ -38,6 +38,7 @@ public final class SchemaConstants
     public static final String TRACE_KEYSPACE_NAME = "system_traces";
     public static final String AUTH_KEYSPACE_NAME = "system_auth";
     public static final String DISTRIBUTED_KEYSPACE_NAME = "system_distributed";
+    public static final String MONITOR_KEYSPACE_NAME = "system_monitor";
 
     /* system keyspace names (the ones with LocalStrategy replication strategy) */
     public static final Set<String> LOCAL_SYSTEM_KEYSPACE_NAMES =
@@ -45,7 +46,7 @@ public final class SchemaConstants
 
     /* replicate system keyspace names (the ones with a "true" replication strategy) */
     public static final Set<String> REPLICATED_SYSTEM_KEYSPACE_NAMES =
-        ImmutableSet.of(TRACE_KEYSPACE_NAME, AUTH_KEYSPACE_NAME, DISTRIBUTED_KEYSPACE_NAME);
+        ImmutableSet.of(TRACE_KEYSPACE_NAME, AUTH_KEYSPACE_NAME, DISTRIBUTED_KEYSPACE_NAME, MONITOR_KEYSPACE_NAME);
     /**
      * longest permissible KS or CF name.  Our main concern is that filename not be more than 255 characters;
      * the filename will contain both the KS and CF names. Since non-schema-name components only take up

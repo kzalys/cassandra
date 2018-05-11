@@ -46,6 +46,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.*;
 
+import org.apache.cassandra.db.monitoring.BadQuery;
 import org.apache.commons.lang3.StringUtils;
 
 import org.slf4j.Logger;
@@ -1093,6 +1094,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
 
         assert tokenMetadata.sortedTokens().size() > 0;
         doAuthSetup();
+        doBadQuerySetup();
     }
 
     private void doAuthSetup()
@@ -1107,6 +1109,15 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             DatabaseDescriptor.getNetworkAuthorizer().setup();
             Schema.instance.registerListener(new AuthSchemaChangeListener());
             authSetupComplete = true;
+        }
+    }
+
+    private void doBadQuerySetup()
+    {
+        if (DatabaseDescriptor.isBadQueryTracingEnabled())
+        {
+            logger.info("enable badquery tracing");
+            BadQuery.setup();
         }
     }
 

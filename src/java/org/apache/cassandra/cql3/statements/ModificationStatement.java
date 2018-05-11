@@ -43,6 +43,7 @@ import org.apache.cassandra.cql3.selection.Selection.Selectors;
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.filter.*;
 import org.apache.cassandra.db.marshal.BooleanType;
+import org.apache.cassandra.db.monitoring.BadQuery;
 import org.apache.cassandra.db.partitions.*;
 import org.apache.cassandra.db.rows.RowIterator;
 import org.apache.cassandra.db.view.View;
@@ -437,6 +438,9 @@ public abstract class ModificationStatement implements CQLStatement
     public ResultMessage execute(QueryState queryState, QueryOptions options, long queryStartNanoTime)
     throws RequestExecutionException, RequestValidationException
     {
+        BadQuery.checkForCompactionStrategySettings(this.metadata, this.attrs);
+        BadQuery.checkForCLSettings(this.metadata, options.getConsistency());
+
         if (options.getConsistency() == null)
             throw new InvalidRequestException("Invalid empty consistency level");
 

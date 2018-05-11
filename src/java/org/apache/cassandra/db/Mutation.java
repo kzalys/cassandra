@@ -108,9 +108,35 @@ public class Mutation implements IMutation
         return modifications.keySet();
     }
 
+    public Collection<String> getTableNames()
+    {
+        Set<String> tables = new HashSet<>();
+        for (PartitionUpdate update : modifications.values())
+        {
+            tables.add(update.metadata().name);
+        }
+        return tables;
+    }
+
     public DecoratedKey key()
     {
         return key;
+    }
+
+    public String getKey()
+    {
+        boolean firstRound = true;
+        StringBuilder key = new StringBuilder();
+        for (PartitionUpdate update : modifications.values())
+        {
+            if (!firstRound)
+            {
+                key.append(":");
+            }
+            key.append(update.metadata().partitionKeyType.getString(key().getKey()));
+            firstRound = false;
+        }
+        return key.toString();
     }
 
     public ImmutableCollection<PartitionUpdate> getPartitionUpdates()

@@ -34,6 +34,7 @@ import org.apache.cassandra.config.Config;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.ParameterizedClass;
 import org.apache.cassandra.db.*;
+import org.apache.cassandra.db.monitoring.BadQuery;
 import org.apache.cassandra.exceptions.CDCWriteException;
 import org.apache.cassandra.io.FSWriteError;
 import org.apache.cassandra.io.compress.ICompressor;
@@ -262,6 +263,7 @@ public class CommitLog implements CommitLogMBean
             int size = dob.getLength();
 
             int totalSize = size + ENTRY_OVERHEAD_SIZE;
+            BadQuery.checkForLargeWrite(mutation, totalSize);
             if (totalSize > MAX_MUTATION_SIZE)
             {
                 throw new IllegalArgumentException(String.format("Mutation of %s is too large for the maximum size of %s",

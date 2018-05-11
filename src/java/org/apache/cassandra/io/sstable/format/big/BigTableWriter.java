@@ -29,6 +29,8 @@ import org.apache.cassandra.config.Config;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.lifecycle.LifecycleTransaction;
+import org.apache.cassandra.db.monitoring.BadQuery;
+import org.apache.cassandra.db.partitions.PartitionUpdate;
 import org.apache.cassandra.db.rows.*;
 import org.apache.cassandra.db.transform.Transformation;
 import org.apache.cassandra.io.FSWriteError;
@@ -202,6 +204,8 @@ public class BigTableWriter extends SSTableWriter
 
     private void maybeLogLargePartitionWarning(DecoratedKey key, long rowSize)
     {
+        BadQuery.checkForLargeWrite(new Mutation(PartitionUpdate.emptyUpdate(metadata.get(), key)), rowSize);
+
         if (rowSize > DatabaseDescriptor.getCompactionLargePartitionWarningThreshold())
         {
             String keyString = metadata().partitionKeyType.getString(key.getKey());
