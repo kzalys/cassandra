@@ -96,7 +96,7 @@ public final class VirtualMutation implements IMutation
         }
         return key.toString();
     }
-    
+
     @Override
     public DecoratedKey key()
     {
