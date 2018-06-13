@@ -2615,6 +2615,7 @@ public class DatabaseDescriptor
         if (value > getConcurrentCompactors())
             logger.warn("max_concurrent_automatic_sstable_upgrades ({}) is larger than concurrent_compactors ({})", value, getConcurrentCompactors());
     }
+<<<<<<< HEAD
     
     public static AuditLogOptions getAuditLoggingOptions()
     {

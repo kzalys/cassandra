@@ -187,21 +187,18 @@ public class BadQuery
     /**
      * Check current query if it qualifies slow coordinator read or not.
      *
-     * @param commands    read commands.
+     * @param command    read command.
      * @param latencyinns time it took to read all the commands.
      */
-    public static void checkForSlowCoordinatorRead(List<SinglePartitionReadCommand> commands,
+    public static void checkForSlowCoordinatorRead(ReadCommand command,
                                                    long latencyinns)
     {
-        for (ReadCommand command : commands)
+        //for now even if a single keyspace is in ignore list then do not trace entire batch
+        if (!shouldTrace(command.metadata().keyspace))
         {
-            //for now even if a single keyspace is in ignore list then do not trace entire batch
-            if (!shouldTrace(command.metadata().keyspace))
-            {
-                return;
-            }
+            return;
         }
-        SlowQuery.checkForSlowCoordinatorRead(commands, latencyinns);
+        SlowQuery.checkForSlowCoordinatorRead(command, latencyinns);
     }
 
     /**

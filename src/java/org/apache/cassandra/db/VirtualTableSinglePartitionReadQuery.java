@@ -80,7 +80,8 @@ public class VirtualTableSinglePartitionReadQuery extends VirtualTableReadQuery 
         sb.append(" WHERE ");
 
         sb.append(ColumnMetadata.toCQLString(metadata().partitionKeyColumns())).append(" = ");
-        DataRange.appendKeyString(sb, metadata().partitionKeyType, partitionKey().getKey());
+        DataRange.appendKeyString(sb, metadata().partitionKeyType, partitionKey()
+                .getKey(), ", ");
 
         // We put the row filter first because the clustering index filter can end by "ORDER BY"
         if (!rowFilter().isEmpty())

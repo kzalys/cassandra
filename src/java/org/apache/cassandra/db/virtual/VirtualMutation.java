@@ -18,6 +18,8 @@
 package org.apache.cassandra.db.virtual;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
@@ -69,6 +71,32 @@ public final class VirtualMutation implements IMutation
         return modifications.keySet();
     }
 
+    public Collection<String> getTableNames()
+    {
+        Set<String> tables = new HashSet<>();
+        for (PartitionUpdate update : modifications.values())
+        {
+            tables.add(update.metadata().name);
+        }
+        return tables;
+    }
+
+    public String getKey()
+    {
+        boolean firstRound = true;
+        StringBuilder key = new StringBuilder();
+        for (PartitionUpdate update : modifications.values())
+        {
+            if (!firstRound)
+            {
+                key.append(":");
+            }
+            key.append(update.metadata().partitionKeyType.getString(key().getKey()));
+            firstRound = false;
+        }
+        return key.toString();
+    }
+    
     @Override
     public DecoratedKey key()
     {

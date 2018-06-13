@@ -114,23 +114,14 @@ public class SlowQuery extends BadQueryTypes
         }
     }
 
-    static void checkForSlowCoordinatorRead(List<SinglePartitionReadCommand> commands,
+    static void checkForSlowCoordinatorRead(ReadCommand command,
                                             long latencyinns)
     {
         long latencyInms = TimeUnit.NANOSECONDS.toMillis(latencyinns);
         if (latencyInms > MonitoringService.instance.getBadQueryReadSlowCoordLatencyInms())
         {
-            Set<String> keyspaceName = new TreeSet<>();
-            Set<String> tableName = new TreeSet<>();
-            Set<String> key = new TreeSet<>();
-            for (ReadCommand command : commands)
-            {
-                key.add(command.getKey());
-                keyspaceName.add(command.metadata().keyspace);
-                tableName.add(command.metadata().name);
-            }
             BadQuery.report(BadQuery.BadQueryCategory.SLOW_READ_COORINATOR,
-                            new SlowQuery(String.join(":", keyspaceName), String.join(":", tableName), String.join(":", key.toString()), latencyInms));
+                            new SlowQuery(command.metadata().keyspace, command.metadata().name, command.getKey(), latencyInms));
         }
     }
 }
