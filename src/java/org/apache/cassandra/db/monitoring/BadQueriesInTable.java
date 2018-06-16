@@ -30,7 +30,13 @@ import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.exceptions.AlreadyExistsException;
 import org.apache.cassandra.locator.NetworkTopologyStrategy;
 import org.apache.cassandra.metrics.BadQueryMetrics;
-import org.apache.cassandra.schema.*;
+import org.apache.cassandra.schema.KeyspaceMetadata;
+import org.apache.cassandra.schema.KeyspaceParams;
+import org.apache.cassandra.schema.MigrationManager;
+import org.apache.cassandra.schema.Schema;
+import org.apache.cassandra.schema.TableId;
+import org.apache.cassandra.schema.Tables;
+import org.apache.cassandra.schema.TableMetadata;
 import org.apache.cassandra.service.ClientState;
 import org.apache.cassandra.service.QueryState;
 import org.apache.cassandra.utils.ByteBufferUtil;
@@ -133,7 +139,7 @@ public class BadQueriesInTable implements IBadQueryReporter
 
         ScheduledExecutors.scheduledTasks.scheduleWithFixedDelay(() -> log(),
                 5,
-                DatabaseDescriptor.getBadQueryOptions().logging_interval_in_s,
+                DatabaseDescriptor.getBadQueryOptions().logging_interval_in_secs,
                 TimeUnit.SECONDS);
     }
 

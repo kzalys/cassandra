@@ -19,7 +19,10 @@ package org.apache.cassandra.db.monitoring;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.cql3.Attributes;
-import org.apache.cassandra.db.*;
+import org.apache.cassandra.db.ConsistencyLevel;
+import org.apache.cassandra.db.IMutation;
+import org.apache.cassandra.db.Mutation;
+import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.schema.TableMetadata;
 import org.apache.cassandra.service.MonitoringService;
 

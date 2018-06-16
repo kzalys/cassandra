@@ -1208,7 +1208,7 @@ bad_query_options:
     enabled: false
     #reporter:
     #tracing_fraction:
-    #logging_interval_in_s:
+    #logging_interval_in_secs:
     #max_samples_per_interval_in_syslog
     #max_samples_per_interval_in_table
     #write_max_partitionsize_in_bytes:

@@ -40,7 +40,7 @@ public class BadQueryOptions
      * Default logging will be in system.log file, interval at which badqueries will be
      * logged to system.log file
      */
-    public Integer logging_interval_in_s = 15 * 60;
+    public Integer logging_interval_in_secs = 15 * 60;
 
     /**
      * maximum bad query samples to log in system.log file. This is to not flood log

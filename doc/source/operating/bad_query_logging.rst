@@ -21,7 +21,7 @@
 BadQuery Logging
 ----------------
 
-Cassandra has the ability to detect different types of bad queries happening in the cluster. These bad queries doesn’t always means there is a definite problem in the cluster. It is trying to warn about some uncommon behavior for given query, on the other side if there is some problem in the cluster then these are not the only bad patterns in your cluster, it could be any other scenario as well. Here Cassandra is trying to inform user about some uncommon problems which could have potential effect on your workload. At the end you will have to analyze everything for your workload.
+Cassandra has the ability to detect different types of bad queries happening in the cluster. These bad queries doesn’t always means there is a definite problem in the cluster. It is trying to warn about some uncommon behavior for given query, on the other side if there is some problem in the cluster then these are not the only bad patterns in your cluster, it could be any other scenario as well. Here Cassandra is trying to inform user about some uncommon behavior which could have potential effect on your workload. At the end you will have to analyze everything for your workload.
 
 
 What does it capture
@@ -54,18 +54,18 @@ BadQuery logging can be configured using cassandra.yaml. You can also change dif
 
 cassandra.yaml configurations for BadQuery
 """""""""""""""""""""""""""""""""""""""""""
-	- ``enabled``: This option enables/ disables badquery logging
-	- ``reporter``: Class name of the BadQuery logger/ custom logger if not set, default to `system.log`
+	- ``enabled``: This option enables/disables badquery logging
+	- ``reporter``: Class name of the BadQuery logger/custom logger if not set, default to `system.log`
 	- ``tracing_fraction``: BadQuery tracing fraction, if not set, default to `25%` 
-	- ``logging_interval_in_s``: BadQuery logging interval, if not set, default to `15 minutes`
+	- ``logging_interval_in_secs``: BadQuery logging interval, if not set, default to `15 minutes`
 	- ``max_samples_per_interval_in_syslog``: Maximum badquery samples to log in ``system.log`` per interval, if not set, default to `5` for each type of badquery 
 	- ``max_samples_per_interval_in_table``: Maximum badquery samples to log in table per interval, if not set, default to `5` for each type of badquery 
 	- ``write_max_partitionsize_in_bytes``: max partition size threshold during write operation, if not set, default to `50M` 
 	- ``read_max_partitionsize_in_bytes``: max partition size threshold during read operation, if not set, default to `50M` 
 	- ``read_slow_local_latency_in_ms``: read latency threshold for slow local reads, if not set, default to `100ms` 
-	- ``write_slow_local_latency_in_ms``: read latency threshold for slow local writes, if not set, default to `100ms` 
+	- ``write_slow_local_latency_in_ms``: write latency threshold for slow local writes, if not set, default to `100ms` 
 	- ``read_slow_coord_latency_in_ms``: read latency threshold for slow coordinator reads, if not set, default to `200ms` 
-	- ``write_slow_coord_latency_in_ms``: read latency threshold for slow coordinator writes, if not set, default to `200ms` 
+	- ``write_slow_coord_latency_in_ms``: write latency threshold for slow coordinator writes, if not set, default to `200ms` 
 	- ``tombstone_limit``: tombstone threshold, if not set, default to `1000` 
 	- ``ignore_keyspaces``: Comma separated list of keyspaces to be excluded in badquery loggin, default - excludes none of the keyspaces 
 
@@ -131,9 +131,8 @@ badquerythresholdtype
     not set the value from cassandra.yaml will be used
 
 ``badqueryignorekeyspaces``
-    Comma separated list of keyspaces to be excluded in badquery loggin, default - 
-    excludes none of the keyspaces. If not set the value from cassandra.yaml will be 
-    used
+    Comma separated list of keyspaces to be excluded in badquery loggin. If
+    not set the value from cassandra.yaml will be used
 
 
 NodeTool command to disable BadQuery logging
@@ -146,12 +145,12 @@ NodeTool command to change threshold for max partition size during write
 
 NodeTool command to get current thresholds
 """""""""""""""""""""""""""""""""""""""""""
-
 ``nodetool getbadquerythreshold``
 
 
 Sample output in system.log
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 ::
 
     LogMessage: 
@@ -173,11 +172,13 @@ Sample output in system.log
 
 How to get BadQuery output in table insetad of ``system.log``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 To use ``BadQueriesInTable`` as a logger in badquery logging, set the logger to ``BadQueriesInTable`` in cassandra.yaml under section ``bad_query_options``, sub-section ``reporter``. And then you can get all the badqueries by running following query on ``cqlsh``:
  -  ``SELECT * FROM system_monitor.badquery;``
 
 Different types of BadQueries explained here
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 **policyid:0, slow local read detected: ks:k1, table:t1, key:abc, latency:128ms**
   + keyspace name: k1
   + table name: t1

@@ -58,7 +58,7 @@ public class BadQueriesInSystemLog implements IBadQueryReporter
     {
         ScheduledExecutors.scheduledTasks.scheduleWithFixedDelay(() -> log(),
                 5,
-                DatabaseDescriptor.getBadQueryOptions().logging_interval_in_s,
+                DatabaseDescriptor.getBadQueryOptions().logging_interval_in_secs,
                 TimeUnit.SECONDS);
     }
 
