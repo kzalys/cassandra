@@ -31,7 +31,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 @Command(name = "setbadquerythreshold", description = "Sets the badquery threshold")
 public class SetBadQueryThreshold extends NodeToolCmd
 {
-    @Arguments(title = "<badquerythresholdtype> <thresholdvalue>", usage = "<badquerythresholdtype> <thresholdvalue>", description = "badquery threshold type and value.\nPossible badquery threshold types are as following: [badquerytracingfraction|badquerytracingfraction|badqueryreadmaxpartitionsizeinbytes|badquerywritemaxpartitionsizeinbytes|badqueryreadslowlocallatencyinms|badquerywriteslowlocallatencyinms|badqueryreadslowcoordlatencyinms|badquerywriteslowcoordlatencyinms|badquerytombstonelimit|badqueryignorekeyspaces]", required = true)
+    @Arguments(title = "<badquerythresholdtype> <thresholdvalue>", usage =
+            "<badquerythresholdtype> <thresholdvalue>", description = "badquery " +
+            "threshold type and value.\nPossible badquery threshold types are as " +
+            "following: [badquerytracingfraction|badquerymaxsamplesinsyslog" +
+            "|badquerymaxsamplesintable|badqueryreadmaxpartitionsizeinbytes" +
+            "|badquerywritemaxpartitionsizeinbytes|badqueryreadslowlocallatencyinms|badquerywriteslowlocallatencyinms|badqueryreadslowcoordlatencyinms|badquerywriteslowcoordlatencyinms|badquerytombstonelimit|badqueryignorekeyspaces]", required = true)
     private List<String> args = new ArrayList<>();
 
     @Override
@@ -50,6 +55,10 @@ public class SetBadQueryThreshold extends NodeToolCmd
         if (thresholdType.equals("badquerymaxsamplesinsyslog"))
         {
             probe.setBadQueryMaxSamplesInSyslog(Integer.parseInt(thresholdValue));
+        }
+        if (thresholdType.equals("badquerymaxsamplesintable"))
+        {
+            probe.setBadQueryMaxSamplesInTable(Integer.parseInt(thresholdValue));
         }
         else if (thresholdType.equals("badquerytracingfraction"))
         {

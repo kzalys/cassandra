@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 
+import org.apache.cassandra.db.monitoring.BadQueryOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -410,6 +411,8 @@ public class Config
     public Integer bad_query_tombstone_limit = 1000;
 
     public String bad_query_ignore_keyspaces = "";
+
+    public volatile BadQueryOptions bad_query_options = new BadQueryOptions();
 
 
     public CorruptedTombstoneStrategy corrupted_tombstone_strategy = CorruptedTombstoneStrategy.disabled;

@@ -24,7 +24,6 @@ import org.apache.cassandra.schema.TableMetadata;
 import org.apache.cassandra.service.MonitoringService;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -70,16 +69,30 @@ public class BadQuery
     {
         DatabaseDescriptor.getBadQueryReporter().setup();
 
-        MonitoringService.instance.setBadQueryMaxSamplesInSyslog(DatabaseDescriptor.getBadQueryMaxSamplesPerIntervalInSyslog());
-        MonitoringService.instance.setBadQueryTracingFraction(DatabaseDescriptor.getBadQueryTracingFraction());
-        MonitoringService.instance.setBadQueryReadMaxPartitionSizeInbytes(DatabaseDescriptor.getBadQueryReadMaxPartitionsizeInBytes());
-        MonitoringService.instance.setBadQueryWriteMaxPartitionSizeInbytes(DatabaseDescriptor.getBadQueryWriteMaxPartitionSizeInBytes());
-        MonitoringService.instance.setBadQueryReadSlowLocalLatencyInms(DatabaseDescriptor.getBadQueryReadSlowLocalLatencyInMs());
-        MonitoringService.instance.setBadQueryWriteSlowLocalLatencyInms(DatabaseDescriptor.getBadQueryWriteSlowLocalLatencyInMs());
-        MonitoringService.instance.setBadQueryReadSlowCoordLatencyInms(DatabaseDescriptor.getBadQueryReadSlowCoordLatenchInMs());
-        MonitoringService.instance.setBadQueryWriteSlowCoordLatencyInms(DatabaseDescriptor.getBadQueryWriteSlowCoordLatencyInMs());
-        MonitoringService.instance.setBadQueryTombstoneLimit(DatabaseDescriptor.getBadQueryTombstoneLimit());
-        MonitoringService.instance.setBadQueryIgnoreKeyspaces(DatabaseDescriptor.getBadQueryIgnoreKeyspaces());
+        MonitoringService.instance.setBadQueryMaxSamplesInSyslog
+                (DatabaseDescriptor.getBadQueryOptions()
+                        .max_samples_per_interval_in_syslog);
+        MonitoringService.instance.setBadQueryMaxSamplesInTable
+                (DatabaseDescriptor.getBadQueryOptions()
+                        .max_samples_per_interval_in_table);
+        MonitoringService.instance.setBadQueryTracingFraction(DatabaseDescriptor
+                .getBadQueryOptions().tracing_fraction);
+        MonitoringService.instance.setBadQueryReadMaxPartitionSizeInbytes
+                (DatabaseDescriptor.getBadQueryOptions().read_max_partitionsize_in_bytes);
+        MonitoringService.instance.setBadQueryWriteMaxPartitionSizeInbytes
+                (DatabaseDescriptor.getBadQueryOptions().write_max_partitionsize_in_bytes);
+        MonitoringService.instance.setBadQueryReadSlowLocalLatencyInms
+                (DatabaseDescriptor.getBadQueryOptions().read_slow_local_latency_in_ms);
+        MonitoringService.instance.setBadQueryWriteSlowLocalLatencyInms
+                (DatabaseDescriptor.getBadQueryOptions().write_slow_local_latency_in_ms);
+        MonitoringService.instance.setBadQueryReadSlowCoordLatencyInms
+                (DatabaseDescriptor.getBadQueryOptions().read_slow_coord_latency_in_ms);
+        MonitoringService.instance.setBadQueryWriteSlowCoordLatencyInms
+                (DatabaseDescriptor.getBadQueryOptions().write_slow_local_latency_in_ms);
+        MonitoringService.instance.setBadQueryTombstoneLimit(DatabaseDescriptor
+                .getBadQueryOptions().tombstone_limit);
+        MonitoringService.instance.setBadQueryIgnoreKeyspaces(DatabaseDescriptor
+                .getBadQueryOptions().ignore_keyspaces);
     }
 
     /**
@@ -105,7 +118,7 @@ public class BadQuery
      */
     public static boolean shouldTrace(String ksName)
     {
-        if (!DatabaseDescriptor.isBadQueryTracingEnabled() ||
+        if (!DatabaseDescriptor.getBadQueryOptions().enabled ||
                 (Double.compare(MonitoringService.instance.getBadQueryTracingFraction(), 0.0d) == 0) ||
                 (MonitoringService.instance.getBadQueryIgnoreKeyspaces() != null &&
                         MonitoringService.instance.getBadQueryIgnoreKeyspaces().contains(ksName)))

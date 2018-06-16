@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 
+import org.apache.cassandra.db.monitoring.BadQueryOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -759,8 +760,8 @@ public class DatabaseDescriptor
 
         validateMaxConcurrentAutoUpgradeTasksConf(conf.max_concurrent_automatic_sstable_upgrades);
 
-        if (conf.bad_query_reporter != null)
-            badQueryReporter = FBUtilities.newBadQueryReporter(conf.bad_query_reporter);
+        if (conf.bad_query_options.reporter != null)
+            badQueryReporter = FBUtilities.newBadQueryReporter(conf.bad_query_options.reporter);
         else
             badQueryReporter = new BadQueriesInSystemLog();
     }
@@ -2615,7 +2616,6 @@ public class DatabaseDescriptor
         if (value > getConcurrentCompactors())
             logger.warn("max_concurrent_automatic_sstable_upgrades ({}) is larger than concurrent_compactors ({})", value, getConcurrentCompactors());
     }
-<<<<<<< HEAD
     
     public static AuditLogOptions getAuditLoggingOptions()
     {
@@ -2639,66 +2639,11 @@ public class DatabaseDescriptor
 
     public static void setBadQueryTracingStatus(Boolean tracingStatus)
     {
-        conf.bad_query_tracing_enabled = tracingStatus;
+        conf.bad_query_options.enabled = tracingStatus;
     }
 
-    public static boolean isBadQueryTracingEnabled()
+    public static BadQueryOptions getBadQueryOptions()
     {
-        return conf.bad_query_tracing_enabled;
-    }
-
-    public static int getBadQueryLoggingInterval()
-    {
-        return conf.bad_query_logging_interval_in_s;
-    }
-
-    public static int getBadQueryMaxSamplesPerIntervalInSyslog()
-    {
-        return conf.bad_query_max_samples_per_interval_in_syslog;
-    }
-
-    public static Double getBadQueryTracingFraction()
-    {
-        return conf.bad_query_tracing_fraction;
-    }
-
-    public static Long getBadQueryReadMaxPartitionsizeInBytes()
-    {
-        return conf.bad_query_read_max_partitionsize_in_bytes;
-    }
-
-    public static Long getBadQueryWriteMaxPartitionSizeInBytes()
-    {
-        return conf.bad_query_write_max_partitionsize_in_bytes;
-    }
-
-    public static Integer getBadQueryReadSlowLocalLatencyInMs()
-    {
-        return conf.bad_query_read_slow_local_latency_in_ms;
-    }
-
-    public static Integer getBadQueryWriteSlowLocalLatencyInMs()
-    {
-        return conf.bad_query_write_slow_local_latency_in_ms;
-    }
-
-    public static Integer getBadQueryReadSlowCoordLatenchInMs()
-    {
-        return conf.bad_query_read_slow_coord_latency_in_ms;
-    }
-
-    public static Integer getBadQueryWriteSlowCoordLatencyInMs()
-    {
-        return conf.bad_query_write_slow_coord_latency_in_ms;
-    }
-
-    public static Integer getBadQueryTombstoneLimit()
-    {
-        return conf.bad_query_tombstone_limit;
-    }
-
-    public static String getBadQueryIgnoreKeyspaces()
-    {
-        return conf.bad_query_ignore_keyspaces;
+        return conf.bad_query_options;
     }
 }

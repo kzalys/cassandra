@@ -58,7 +58,7 @@ public class BadQueriesInSystemLog implements IBadQueryReporter
     {
         ScheduledExecutors.scheduledTasks.scheduleWithFixedDelay(() -> log(),
                 5,
-                DatabaseDescriptor.getBadQueryLoggingInterval(),
+                DatabaseDescriptor.getBadQueryOptions().logging_interval_in_s,
                 TimeUnit.SECONDS);
     }
 
@@ -82,7 +82,9 @@ public class BadQueriesInSystemLog implements IBadQueryReporter
     @Override
     public void reportBadQuery(BadQuery.BadQueryCategory queryType, BadQueryTypes operationDetails)
     {
-        if (CURRENT_SAMPLES.get(queryType).get() < DatabaseDescriptor.getBadQueryMaxSamplesPerIntervalInSyslog())
+        if (CURRENT_SAMPLES.get(queryType).get() <
+                DatabaseDescriptor.getBadQueryOptions()
+                        .max_samples_per_interval_in_syslog)
         {
             BAD_QUERY_CATEGORY_QUEUES.get(queryType).offer(operationDetails);
             CURRENT_SAMPLES.get(queryType).incrementAndGet();

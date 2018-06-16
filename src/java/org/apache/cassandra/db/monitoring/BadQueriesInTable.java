@@ -133,7 +133,7 @@ public class BadQueriesInTable implements IBadQueryReporter
 
         ScheduledExecutors.scheduledTasks.scheduleWithFixedDelay(() -> log(),
                 5,
-                DatabaseDescriptor.getBadQueryLoggingInterval(),
+                DatabaseDescriptor.getBadQueryOptions().logging_interval_in_s,
                 TimeUnit.SECONDS);
     }
 
@@ -143,7 +143,8 @@ public class BadQueriesInTable implements IBadQueryReporter
         /*TODO: ideally we should insert each of this events directly in table which will make it more real time
         but we don't know performance penalty of INSERTS even though we keep table very very small.
         Analyze and see if we can make ModificationStatement.execute almost 0ms*/
-        if (CURRENT_SAMPLES.get(queryType).get() < DatabaseDescriptor.getBadQueryMaxSamplesPerIntervalInSyslog())
+        if (CURRENT_SAMPLES.get(queryType).get() < DatabaseDescriptor
+                .getBadQueryOptions().max_samples_per_interval_in_table)
         {
             BAD_QUERY_CATEGORY_QUEUES.get(queryType).offer(operationDetails);
             CURRENT_SAMPLES.get(queryType).incrementAndGet();

@@ -33,6 +33,8 @@ public class GetBadQueryThreshold extends NodeToolCmd
             StringBuilder sb = new StringBuilder();
             sb.append("\ntracing fraction: " + probe.getBadQueryTracingFraction());
             sb.append("\nmax samples count per badquery report in syslog: " + probe.getBadQueryMaxSamplesInSyslog());
+            sb.append("\nmax samples count per badquery report in table: " + probe
+                    .getBadQueryMaxSamplesInTable());
             sb.append("\nmax read partition size in bytes: " + probe.getBadQueryReadMaxPartitionSizeInbytes());
             sb.append("\nmax write partition size in bytes: " + probe.getBadQueryWriteMaxPartitionSizeInbytes());
             sb.append("\nread slow local latency in ms: " + probe.getBadQueryReadSlowLocalLatencyInms());

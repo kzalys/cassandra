@@ -1699,6 +1699,16 @@ public class NodeProbe implements AutoCloseable
         monitoringProxy.setBadQueryMaxSamplesInSyslog(badQueryMaxSamplesInSyslog);
     }
 
+    public int getBadQueryMaxSamplesInTable()
+    {
+        return monitoringProxy.getBadQueryMaxSamplesInTable();
+    }
+
+    public void setBadQueryMaxSamplesInTable(int badQueryMaxSamplesInTable)
+    {
+        monitoringProxy.setBadQueryMaxSamplesInTable(badQueryMaxSamplesInTable);
+    }
+
     public boolean isBadQueryTracingEnabled()
     {
         return monitoringProxy.getBadQueryTracingStatus();

@@ -25,6 +25,10 @@ public interface MonitoringServiceMBean
 
     public void setBadQueryMaxSamplesInSyslog(int badQueryMaxSamplesInSyslog);
 
+    public int getBadQueryMaxSamplesInTable();
+
+    public void setBadQueryMaxSamplesInTable(int badQueryMaxSamplesInTable);
+
     public double getBadQueryTracingFraction();
 
     public void setBadQueryTracingFraction(double badQueryTracingFraction);
