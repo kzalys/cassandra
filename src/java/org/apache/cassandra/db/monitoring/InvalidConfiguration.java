@@ -97,7 +97,8 @@ public class InvalidConfiguration extends BadQueryTypes
                                            ConsistencyLevel cl)
     {
         Keyspace ks = Schema.instance.getKeyspaceInstance(tableMetadata.keyspace);
-        if (ks.getReplicationStrategy().getClass() == NetworkTopologyStrategy.class && INCORRECT_CONSISTENCY_LEVELS.contains(cl))
+        if (ks != null && ks.getReplicationStrategy().getClass() ==
+                NetworkTopologyStrategy.class && INCORRECT_CONSISTENCY_LEVELS.contains(cl))
         {
             if (!visitedTablesInvalidConsistency.containsKey(tableMetadata.name))
             {
