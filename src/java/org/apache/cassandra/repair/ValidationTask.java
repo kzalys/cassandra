@@ -18,16 +18,20 @@
 package org.apache.cassandra.repair;
 
 import java.net.InetAddress;
-import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.AbstractFuture;
 
-import org.apache.cassandra.dht.Range;
-import org.apache.cassandra.dht.Token;
+import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.exceptions.RepairException;
+import org.apache.cassandra.net.IAsyncCallbackWithFailure;
+import org.apache.cassandra.net.MessageIn;
 import org.apache.cassandra.net.MessagingService;
+import org.apache.cassandra.repair.messages.RepairMessage;
+import org.apache.cassandra.repair.messages.ValidationComplete;
 import org.apache.cassandra.repair.messages.ValidationRequest;
-import org.apache.cassandra.utils.MerkleTree;
+import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.MerkleTrees;
 
 /**
@@ -47,29 +51,56 @@ public class ValidationTask extends AbstractFuture<TreeResponse> implements Runn
         this.gcBefore = gcBefore;
     }
 
+    class ValidationCallBack implements IAsyncCallbackWithFailure<RepairMessage>
+    {
+        @Override
+        public void onFailure(InetAddress from)
+        {
+            setException(new RepairException(desc, "Validation failed in " + endpoint));
+        }
+
+        @Override
+        public void response(MessageIn<RepairMessage> msg)
+        {
+            //Receive MerkleTrees from replica node.
+            RepairMessage repairMessage = msg.payload;
+            RepairJobDesc desc = repairMessage.desc;
+            UUID sessionId = desc.sessionId;
+            RepairSession repairSession = ActiveRepairService.instance.getSession(sessionId);
+            if (repairSession == null)
+            {
+                return;
+            }
+
+            //MerkleTrees that is sent from replica. Null if validation failed on replica node.
+            ValidationComplete validaton = (ValidationComplete) repairMessage;
+            MerkleTrees trees = validaton.trees;
+            repairSession.validationComplete(desc, msg.from, trees);
+            if (trees == null)
+            {
+                setException(new RepairException(desc, "Validation failed in " + endpoint));
+            }
+            else
+            {
+                set(new TreeResponse(endpoint, trees));
+            }
+        }
+
+        @Override
+        public boolean isLatencyForSnitch()
+        {
+            return false;
+        }
+    }
+
     /**
      * Send ValidationRequest to replica
      */
     public void run()
     {
         ValidationRequest request = new ValidationRequest(desc, gcBefore);
-        MessagingService.instance().sendOneWay(request.createMessage(), endpoint);
-    }
-
-    /**
-     * Receive MerkleTrees from replica node.
-     *
-     * @param trees MerkleTrees that is sent from replica. Null if validation failed on replica node.
-     */
-    public void treesReceived(MerkleTrees trees)
-    {
-        if (trees == null)
-        {
-            setException(new RepairException(desc, "Validation failed in " + endpoint));
-        }
-        else
-        {
-            set(new TreeResponse(endpoint, trees));
-        }
+        ValidationCallBack cb = new ValidationCallBack();
+        MessagingService.instance().sendRR(request.createMessage(), endpoint, cb, TimeUnit.SECONDS.toMillis
+                        (DatabaseDescriptor.getRepairValidationRequestTimeout()), true);
     }
 }

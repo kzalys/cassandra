@@ -69,10 +69,12 @@ public class Validator implements Runnable
     private MerkleTrees.TreeRangeIterator ranges;
     // last key seen
     private DecoratedKey lastKey;
+    private int id;
 
-    public Validator(RepairJobDesc desc, InetAddress initiator, int gcBefore)
+    public Validator(RepairJobDesc desc, InetAddress initiator, int gcBefore, int id)
     {
         this(desc, initiator, gcBefore, false);
+        this.id = id;
     }
 
     public Validator(RepairJobDesc desc, InetAddress initiator, int gcBefore, boolean evenTreeDistribution)
@@ -267,7 +269,7 @@ public class Validator implements Runnable
     {
         logger.error("Failed creating a merkle tree for {}, {} (see log for details)", desc, initiator);
         // send fail message only to nodes >= version 2.0
-        MessagingService.instance().sendOneWay(new ValidationComplete(desc).createMessage(), initiator);
+        MessagingService.instance().sendReply(new ValidationComplete(desc).createValidationMessage(), id, initiator);
     }
 
     /**
@@ -281,6 +283,7 @@ public class Validator implements Runnable
             logger.info(String.format("[repair #%s] Sending completed merkle tree to %s for %s.%s", desc.sessionId, initiator, desc.keyspace, desc.columnFamily));
             Tracing.traceRepair("Sending completed merkle tree to {} for {}.{}", initiator, desc.keyspace, desc.columnFamily);
         }
-        MessagingService.instance().sendOneWay(new ValidationComplete(desc, trees).createMessage(), initiator);
+        MessagingService.instance().sendReply(new ValidationComplete(desc, trees).createValidationMessage(), id,
+                initiator);
     }
 }

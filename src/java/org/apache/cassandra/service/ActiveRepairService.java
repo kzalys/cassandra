@@ -477,25 +477,22 @@ public class ActiveRepairService implements IEndpointStateChangeSubscriber, IFai
         return allAntiCompactionResults;
     }
 
+    public RepairSession getSession(UUID sessionId)
+    {
+        return sessions.get(sessionId);
+    }
+
     public void handleMessage(InetAddress endpoint, RepairMessage message)
     {
         RepairJobDesc desc = message.desc;
         RepairSession session = sessions.get(desc.sessionId);
         if (session == null)
             return;
-        switch (message.messageType)
+        if (message.messageType == RepairMessage.Type.SYNC_COMPLETE)
         {
-            case VALIDATION_COMPLETE:
-                ValidationComplete validation = (ValidationComplete) message;
-                session.validationComplete(desc, endpoint, validation.trees);
-                break;
-            case SYNC_COMPLETE:
-                // one of replica is synced.
-                SyncComplete sync = (SyncComplete) message;
-                session.syncComplete(desc, sync.nodes, sync.success);
-                break;
-            default:
-                break;
+            // one of replica is synced.
+            SyncComplete sync = (SyncComplete) message;
+            session.syncComplete(desc, sync.nodes, sync.success);
         }
     }
 

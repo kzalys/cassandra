@@ -22,15 +22,19 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
+import com.google.common.collect.Sets;
 
+import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.compaction.CompactionManager;
 import org.apache.cassandra.db.compaction.CompactionsTest;
+import org.apache.cassandra.dht.Murmur3Partitioner;
+import org.apache.cassandra.gms.Gossiper;
 import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -101,7 +105,7 @@ public class ValidatorTest
 
         ColumnFamilyStore cfs = Keyspace.open(keyspace).getColumnFamilyStore(columnFamily);
 
-        Validator validator = new Validator(desc, remote, 0);
+        Validator validator = new Validator(desc, remote, 0, -1);
         MerkleTrees tree = new MerkleTrees(partitioner);
         tree.addMerkleTrees((int) Math.pow(2, 15), validator.desc.ranges);
         validator.prepare(cfs, tree);
@@ -119,7 +123,7 @@ public class ValidatorTest
         assertNotNull(tree.hash(new Range<>(min, min)));
 
         MessageOut message = outgoingMessageSink.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        assertEquals(MessagingService.Verb.REPAIR_MESSAGE, message.verb);
+        assertEquals(MessagingService.Verb.INTERNAL_RESPONSE, message.verb);
         RepairMessage m = (RepairMessage) message.payload;
         assertEquals(RepairMessage.Type.VALIDATION_COMPLETE, m.messageType);
         assertEquals(desc, m.desc);
@@ -138,11 +142,11 @@ public class ValidatorTest
 
         InetAddress remote = InetAddress.getByName("127.0.0.2");
 
-        Validator validator = new Validator(desc, remote, 0);
+        Validator validator = new Validator(desc, remote, 0, -1);
         validator.fail();
 
         MessageOut message = outgoingMessageSink.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        assertEquals(MessagingService.Verb.REPAIR_MESSAGE, message.verb);
+        assertEquals(MessagingService.Verb.INTERNAL_RESPONSE, message.verb);
         RepairMessage m = (RepairMessage) message.payload;
         assertEquals(RepairMessage.Type.VALIDATION_COMPLETE, m.messageType);
         assertEquals(desc, m.desc);
@@ -160,6 +164,29 @@ public class ValidatorTest
     public void simpleValidationTest1500() throws Exception
     {
         simpleValidationTest(1500);
+    }
+
+    @Test(expected = ExecutionException.class)
+    public void testValidationTimeOut() throws Exception
+    {
+        DatabaseDescriptor.setRepairValidationRequestTimeout(5);
+        InetAddress remote = InetAddress.getByName("127.0.0.2");
+        Gossiper.instance.initializeNodeUnsafe(remote, UUID.randomUUID(), 1);
+
+        // Set up RepairSession
+        UUID parentSessionId = UUIDGen.getTimeUUID();
+        UUID sessionId = UUID.randomUUID();
+        IPartitioner p = Murmur3Partitioner.instance;
+        Range<Token> repairRange = new Range<>(p.getToken(ByteBufferUtil.bytes(0)), p.getToken(ByteBufferUtil.bytes(100)));
+        Set<InetAddress> endpoints = Sets.newHashSet(remote);
+
+        // RepairSession should throw ExecutorException with the cause of IOException when getting its value
+        RepairJobDesc desc = new RepairJobDesc(parentSessionId, sessionId, "Keyspace1", "test",
+                Arrays.asList(repairRange));
+        ValidationTask v = new ValidationTask(desc, remote, -1);
+        Thread t = new Thread(v);
+        t.start();
+        v.get();
     }
 
     /**
@@ -200,7 +227,7 @@ public class ValidatorTest
         CompactionManager.instance.submitValidation(cfs, validator);
 
         MessageOut message = outgoingMessageSink.get(TEST_TIMEOUT, TimeUnit.SECONDS);
-        assertEquals(MessagingService.Verb.REPAIR_MESSAGE, message.verb);
+        assertEquals(MessagingService.Verb.INTERNAL_RESPONSE, message.verb);
         RepairMessage m = (RepairMessage) message.payload;
         assertEquals(RepairMessage.Type.VALIDATION_COMPLETE, m.messageType);
         assertEquals(desc, m.desc);

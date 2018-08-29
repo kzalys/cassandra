@@ -98,6 +98,8 @@ public class Config
 
     public Integer streaming_socket_timeout_in_ms = 86400000; //24 hours
 
+    public Long repair_validation_request_timeout_in_sec = 86400000L;  //24 hours
+
     public boolean cross_node_timeout = false;
 
     public volatile Double phi_convict_threshold = 8.0;
