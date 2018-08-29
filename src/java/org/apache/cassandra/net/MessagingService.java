@@ -248,6 +248,7 @@ public final class MessagingService implements MessagingServiceMBean
 
         put(Verb.PAXOS_PREPARE, PrepareResponse.serializer);
         put(Verb.PAXOS_PROPOSE, BooleanSerializer.serializer);
+        put(Verb.REPAIR_MESSAGE, RepairMessage.serializer);
     }};
 
     /* This records all the results mapped by message Id */
@@ -669,16 +670,16 @@ public final class MessagingService implements MessagingServiceMBean
      * Send a non-mutation message to a given endpoint. This method specifies a callback
      * which is invoked with the actual response.
      *
-     * @param message message to be sent.
-     * @param to      endpoint to which the message needs to be sent
-     * @param cb      callback interface which is used to pass the responses or
-     *                suggest that a timeout occurred to the invoker of the send().
-     * @param timeout the timeout used for expiration
+     * @param message         message to be sent.
+     * @param to              endpoint to which the message needs to be sent
+     * @param cb              callback interface which is used to pass the responses or
+     *                        suggest that a timeout occurred to the invoker of the send().
+     * @param timeoutInMillis the timeout used for expiration
      * @return an reference to message id used to match with the result
      */
-    public int sendRR(MessageOut message, InetAddress to, IAsyncCallback cb, long timeout, boolean failureCallback)
+    public int sendRR(MessageOut message, InetAddress to, IAsyncCallback cb, long timeoutInMillis, boolean failureCallback)
     {
-        int id = addCallback(cb, message, to, timeout, failureCallback);
+        int id = addCallback(cb, message, to, timeoutInMillis, failureCallback);
         sendOneWay(failureCallback ? message.withParameter(FAILURE_CALLBACK_PARAM, ONE_BYTE) : message, id, to);
         return id;
     }

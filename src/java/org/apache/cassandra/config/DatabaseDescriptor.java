@@ -1025,6 +1025,17 @@ public class DatabaseDescriptor
         return conf.read_request_timeout_in_ms;
     }
 
+    @VisibleForTesting
+    public static void setRepairValidationRequestTimeout(long repairValidationRequestTimeout)
+    {
+        conf.repair_validation_request_timeout_in_sec = repairValidationRequestTimeout;
+    }
+
+    public static long getRepairValidationRequestTimeout()
+    {
+        return conf.repair_validation_request_timeout_in_sec;
+    }
+
     public static void setReadRpcTimeout(Long timeOutInMillis)
     {
         conf.read_request_timeout_in_ms = timeOutInMillis;
