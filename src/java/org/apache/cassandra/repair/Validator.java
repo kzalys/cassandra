@@ -79,20 +79,23 @@ public class Validator implements Runnable
     private MerkleTrees.TreeRangeIterator ranges;
     // last key seen
     private DecoratedKey lastKey;
+    private int id;
 
     private final PreviewKind previewKind;
 
-    public Validator(RepairJobDesc desc, InetAddressAndPort initiator, int nowInSec, PreviewKind previewKind)
+    public Validator(RepairJobDesc desc, InetAddressAndPort initiator, int nowInSec, PreviewKind previewKind, int id)
     {
-        this(desc, initiator, nowInSec, false, false, previewKind);
+        this(desc, initiator, nowInSec, false, false, previewKind, id);
     }
 
-    public Validator(RepairJobDesc desc, InetAddressAndPort initiator, int nowInSec, boolean isIncremental, PreviewKind previewKind)
+    public Validator(RepairJobDesc desc, InetAddressAndPort initiator, int nowInSec, boolean isIncremental,
+                     PreviewKind previewKind, int id)
     {
-        this(desc, initiator, nowInSec, false, isIncremental, previewKind);
+        this(desc, initiator, nowInSec, false, isIncremental, previewKind, id);
     }
 
-    public Validator(RepairJobDesc desc, InetAddressAndPort initiator, int nowInSec, boolean evenTreeDistribution, boolean isIncremental, PreviewKind previewKind)
+    public Validator(RepairJobDesc desc, InetAddressAndPort initiator, int nowInSec, boolean evenTreeDistribution,
+                     boolean isIncremental, PreviewKind previewKind, int id)
     {
         this.desc = desc;
         this.initiator = initiator;
@@ -103,6 +106,7 @@ public class Validator implements Runnable
         range = null;
         ranges = null;
         this.evenTreeDistribution = evenTreeDistribution;
+        this.id = id;
     }
 
     public void prepare(ColumnFamilyStore cfs, MerkleTrees tree)
@@ -403,7 +407,7 @@ public class Validator implements Runnable
     {
         logger.error("Failed creating a merkle tree for {}, {} (see log for details)", desc, initiator);
         // send fail message only to nodes >= version 2.0
-        MessagingService.instance().sendOneWay(new ValidationComplete(desc).createMessage(), initiator);
+        MessagingService.instance().sendReply(new ValidationComplete(desc).createValidationMessage(), id, initiator);
     }
 
     /**
@@ -417,6 +421,7 @@ public class Validator implements Runnable
             logger.info("{} Sending completed merkle tree to {} for {}.{}", previewKind.logPrefix(desc.sessionId), initiator, desc.keyspace, desc.columnFamily);
             Tracing.traceRepair("Sending completed merkle tree to {} for {}.{}", initiator, desc.keyspace, desc.columnFamily);
         }
-        MessagingService.instance().sendOneWay(new ValidationComplete(desc, trees).createMessage(), initiator);
+        MessagingService.instance().sendReply(new ValidationComplete(desc, trees).createValidationMessage(), id,
+                initiator);
     }
 }

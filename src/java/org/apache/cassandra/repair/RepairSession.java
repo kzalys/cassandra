@@ -219,7 +219,6 @@ public class RepairSession extends AbstractFuture<RepairSessionResult> implement
         String message = String.format("Received merkle tree for %s from %s", desc.columnFamily, endpoint);
         logger.info("{} {}", previewKind.logPrefix(getId()), message);
         Tracing.traceRepair(message);
-        task.treesReceived(trees);
     }
 
     /**

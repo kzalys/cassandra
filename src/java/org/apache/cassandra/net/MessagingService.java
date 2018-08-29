@@ -433,6 +433,7 @@ public final class MessagingService implements MessagingServiceMBean
 
         put(Verb.BATCH_STORE, WriteResponse.serializer);
         put(Verb.BATCH_REMOVE, WriteResponse.serializer);
+        put(Verb.REPAIR_MESSAGE, RepairMessage.serializer);
     }};
 
     /* This records all the results mapped by message Id */
