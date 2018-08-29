@@ -18,6 +18,8 @@
 package org.apache.cassandra.repair;
 
 import java.net.InetAddress;
+import com.google.common.util.concurrent.AbstractFuture;
+
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -25,14 +27,15 @@ import com.google.common.util.concurrent.AbstractFuture;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.exceptions.RepairException;
+import org.apache.cassandra.exceptions.RequestFailureReason;
 import org.apache.cassandra.net.IAsyncCallbackWithFailure;
 import org.apache.cassandra.net.MessageIn;
 import org.apache.cassandra.net.MessagingService;
 import org.apache.cassandra.repair.messages.RepairMessage;
 import org.apache.cassandra.repair.messages.ValidationComplete;
 import org.apache.cassandra.repair.messages.ValidationRequest;
-import org.apache.cassandra.service.ActiveRepairService;
 import org.apache.cassandra.utils.MerkleTrees;
+import org.apache.cassandra.service.ActiveRepairService;
 
 /**
  * ValidationTask sends {@link ValidationRequest} to a replica.
@@ -53,12 +56,6 @@ public class ValidationTask extends AbstractFuture<TreeResponse> implements Runn
 
     class ValidationCallBack implements IAsyncCallbackWithFailure<RepairMessage>
     {
-        @Override
-        public void onFailure(InetAddress from)
-        {
-            setException(new RepairException(desc, "Validation failed in " + endpoint));
-        }
-
         @Override
         public void response(MessageIn<RepairMessage> msg)
         {
@@ -90,6 +87,12 @@ public class ValidationTask extends AbstractFuture<TreeResponse> implements Runn
         public boolean isLatencyForSnitch()
         {
             return false;
+        }
+
+        @Override
+        public void onFailure(InetAddress from, RequestFailureReason failureReason)
+        {
+            setException(new RepairException(desc, "Validation failed in " + from));
         }
     }
 
