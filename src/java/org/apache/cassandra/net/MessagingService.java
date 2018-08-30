@@ -674,7 +674,7 @@ public final class MessagingService implements MessagingServiceMBean
      * @param to              endpoint to which the message needs to be sent
      * @param cb              callback interface which is used to pass the responses or
      *                        suggest that a timeout occurred to the invoker of the send().
-     * @param timeoutInMillis the timeout used for expiration
+     * @param timeoutInMillis the timeout used for expiration in milliseconds
      * @return an reference to message id used to match with the result
      */
     public int sendRR(MessageOut message, InetAddress to, IAsyncCallback cb, long timeoutInMillis, boolean failureCallback)

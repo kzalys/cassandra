@@ -18,8 +18,6 @@
 package org.apache.cassandra.repair;
 
 import java.net.InetAddress;
-import com.google.common.util.concurrent.AbstractFuture;
-
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
