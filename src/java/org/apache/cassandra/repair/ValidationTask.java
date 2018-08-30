@@ -17,7 +17,6 @@
  */
 package org.apache.cassandra.repair;
 
-import java.net.InetAddress;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -83,7 +82,7 @@ public class ValidationTask extends AbstractFuture<TreeResponse> implements Runn
             repairSession.validationComplete(desc, msg.from, trees);
             if (trees == null)
             {
-                setException(new RepairException(desc, "Validation failed in " + endpoint));
+                setException(new RepairException(desc, previewKind, "Validation failed in " + endpoint));
             }
             else
             {
