@@ -65,8 +65,7 @@ public class ValidationTask extends AbstractFuture<TreeResponse> implements Runn
             //Receive MerkleTrees from replica node.
             RepairMessage repairMessage = msg.payload;
             RepairJobDesc desc = repairMessage.desc;
-            UUID sessionId = desc.sessionId;
-            RepairSession repairSession = ActiveRepairService.instance.getSession(sessionId);
+            RepairSession repairSession = ActiveRepairService.instance.getSession(desc.sessionId);
             if (repairSession == null)
             {
                 return;
