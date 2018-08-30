@@ -18,8 +18,6 @@
 package org.apache.cassandra.repair;
 
 import java.net.InetAddress;
-import com.google.common.util.concurrent.AbstractFuture;
-
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -62,8 +60,7 @@ public class ValidationTask extends AbstractFuture<TreeResponse> implements Runn
             //Receive MerkleTrees from replica node.
             RepairMessage repairMessage = msg.payload;
             RepairJobDesc desc = repairMessage.desc;
-            UUID sessionId = desc.sessionId;
-            RepairSession repairSession = ActiveRepairService.instance.getSession(sessionId);
+            RepairSession repairSession = ActiveRepairService.instance.getSession(desc.sessionId);
             if (repairSession == null)
             {
                 return;
@@ -92,7 +89,7 @@ public class ValidationTask extends AbstractFuture<TreeResponse> implements Runn
         @Override
         public void onFailure(InetAddress from, RequestFailureReason failureReason)
         {
-            setException(new RepairException(desc, "Validation failed in " + from));
+            setException(new RepairException(desc, "Validation failed in " + endpoint));
         }
     }
 
