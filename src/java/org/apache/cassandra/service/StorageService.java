@@ -341,20 +341,26 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         // We only start transports if bootstrap has completed and we're not in survey mode, OR if we are in
         // survey mode and streaming has completed but we're not using auth.
         // OR if we have not joined the ring yet.
-        if (StorageService.instance.hasJoined() &&
-                ((!StorageService.instance.isSurveyMode() && !SystemKeyspace.bootstrapComplete()) ||
-                (StorageService.instance.isSurveyMode() && StorageService.instance.isBootstrapMode())))
+        if (StorageService.instance.hasJoined())
         {
-            throw new IllegalStateException("Node is not yet bootstrapped completely. Use nodetool to check bootstrap" +
-                    " state and resume. For more, see `nodetool help bootstrap`");
+            if (StorageService.instance.isSurveyMode())
+            {
+                if (StorageService.instance.isBootstrapMode() || DatabaseDescriptor.getAuthenticator().requireAuthentication())
+                {
+                    throw new IllegalStateException("Not starting RPC server in write_survey mode as " +
+                            "it's bootstrapping or auth is enabled");
+                }
+            }
+            else
+            {
+                if (!SystemKeyspace.bootstrapComplete())
+                {
+                    throw new IllegalStateException("Node is not yet bootstrapped completely. Use nodetool to check bootstrap" +
+                            " state and resume. For more, see `nodetool help bootstrap`");
+                }
+            }
         }
-        else if (StorageService.instance.hasJoined() && StorageService.instance.isSurveyMode() &&
-                DatabaseDescriptor.getAuthenticator().requireAuthentication())
-        {
-            // Auth isn't initialised until we join the ring, so if we're in survey mode auth will always fail.
-            throw new IllegalStateException("Not starting RPC server as write_survey mode and authentication is enabled");
-        }
-
+        
         daemon.thriftServer.start();
     }
 
