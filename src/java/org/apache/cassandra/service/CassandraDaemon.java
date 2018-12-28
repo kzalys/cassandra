@@ -516,19 +516,25 @@ public class CassandraDaemon
         // We only start transports if bootstrap has completed and we're not in survey mode, OR if we are in
         // survey mode and streaming has completed but we're not using auth.
         // OR if we have not joined the ring yet.
-        if (StorageService.instance.hasJoined() &&
-                ((!StorageService.instance.isSurveyMode() && !SystemKeyspace.bootstrapComplete()) ||
-                (StorageService.instance.isSurveyMode() && StorageService.instance.isBootstrapMode())))
+        if (StorageService.instance.hasJoined())
         {
-            logger.info("Not starting client transports as bootstrap has not completed");
-            return;
-        }
-        else if (StorageService.instance.hasJoined() && StorageService.instance.isSurveyMode() &&
-                DatabaseDescriptor.getAuthenticator().requireAuthentication())
-        {
-            // Auth isn't initialised until we join the ring, so if we're in survey mode auth will always fail.
-            logger.info("Not starting client transports as write_survey mode and authentication is enabled");
-            return;
+            if (StorageService.instance.isSurveyMode())
+            {
+                if (StorageService.instance.isBootstrapMode() || DatabaseDescriptor.getAuthenticator().requireAuthentication())
+                {
+                    logger.info("Not starting client transports in write_survey mode as it's bootstrapping or " +
+                            "auth is enabled");
+                    return;
+                }
+            }
+            else
+            {
+                if (!SystemKeyspace.bootstrapComplete())
+                {
+                    logger.info("Not starting client transports as bootstrap has not completed");
+                    return;
+                }
+            }
         }
 
         String nativeFlag = System.getProperty("cassandra.start_native_transport");
@@ -670,19 +676,26 @@ public class CassandraDaemon
         // We only start transports if bootstrap has completed and we're not in survey mode, OR if we are in
         // survey mode and streaming has completed but we're not using auth.
         // OR if we have not joined the ring yet.
-        if (StorageService.instance.hasJoined() &&
-                ((!StorageService.instance.isSurveyMode() && !SystemKeyspace.bootstrapComplete()) ||
-                (StorageService.instance.isSurveyMode() && StorageService.instance.isBootstrapMode())))
+        if (StorageService.instance.hasJoined())
         {
-            throw new IllegalStateException("Node is not yet bootstrapped completely. Use nodetool to check bootstrap state and resume. For more, see `nodetool help bootstrap`");
+            if (StorageService.instance.isSurveyMode())
+            {
+                if (StorageService.instance.isBootstrapMode() || DatabaseDescriptor.getAuthenticator().requireAuthentication())
+                {
+                    throw new IllegalStateException("Not starting client transports in write_survey mode as it's bootstrapping or " +
+                            "auth is enabled");
+                }
+            }
+            else
+            {
+                if (!SystemKeyspace.bootstrapComplete())
+                {
+                    throw new IllegalStateException("Node is not yet bootstrapped completely. Use nodetool to check bootstrap" +
+                            " state and resume. For more, see `nodetool help bootstrap`");
+                }
+            }
         }
-        else if (StorageService.instance.hasJoined() && StorageService.instance.isSurveyMode() &&
-                DatabaseDescriptor.getAuthenticator().requireAuthentication())
-        {
-            // Auth isn't initialised until we join the ring, so if we're in survey mode auth will always fail.
-            throw new IllegalStateException("Not starting native transport as write_survey mode and authentication is enabled");
-        }
-
+        
         if (nativeTransportService == null)
             throw new IllegalStateException("setup() must be called first for CassandraDaemon");
         else
