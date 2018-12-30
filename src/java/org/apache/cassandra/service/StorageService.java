@@ -374,7 +374,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             {
                 if (StorageService.instance.isBootstrapMode() || DatabaseDescriptor.getAuthenticator().requireAuthentication())
                 {
-                    throw new IllegalStateException("Not starting client transports in write_survey mode as it's bootstrapping or " +
+                    throw new IllegalStateException("Not starting RPC server in write_survey mode as it's bootstrapping or " +
                             "auth is enabled");
                 }
             }
