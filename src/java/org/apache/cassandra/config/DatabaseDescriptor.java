@@ -98,6 +98,7 @@ import org.apache.cassandra.locator.IEndpointSnitch;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.locator.Replica;
 import org.apache.cassandra.locator.SeedProvider;
+import org.apache.cassandra.repair.autorepair.AutoRepairOptions;
 import org.apache.cassandra.security.EncryptionContext;
 import org.apache.cassandra.security.SSLFactory;
 import org.apache.cassandra.service.CacheService.CacheType;
@@ -4774,5 +4775,15 @@ public class DatabaseDescriptor
             return CassandraRelevantProperties.JUNIT_STORAGE_COMPATIBILITY_MODE.getEnum(StorageCompatibilityMode.CASSANDRA_4);
         else
             return conf.storage_compatibility_mode;
+    }
+
+    public static AutoRepairOptions getAutoRepairOptions()
+    {
+        return conf.auto_repair_options;
+    }
+
+    public static void setAutoRepairOptions(AutoRepairOptions autoRepairOptions)
+    {
+        conf.auto_repair_options = autoRepairOptions;
     }
 }

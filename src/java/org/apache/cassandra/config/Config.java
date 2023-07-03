@@ -39,6 +39,7 @@ import org.apache.cassandra.audit.AuditLogOptions;
 import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.fql.FullQueryLoggerOptions;
 import org.apache.cassandra.io.sstable.format.big.BigFormat;
+import org.apache.cassandra.repair.autorepair.AutoRepairOptions;
 import org.apache.cassandra.service.StartupChecks.StartupCheckType;
 import org.apache.cassandra.utils.StorageCompatibilityMode;
 
@@ -1234,4 +1235,6 @@ public class Config
     public double severity_during_decommission = 0;
 
     public StorageCompatibilityMode storage_compatibility_mode = StorageCompatibilityMode.CASSANDRA_4;
+
+    public volatile AutoRepairOptions auto_repair_options = new AutoRepairOptions();
 }

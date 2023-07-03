@@ -177,7 +177,10 @@ import org.apache.cassandra.metrics.StorageMetrics;
 import org.apache.cassandra.net.AsyncOneResponse;
 import org.apache.cassandra.net.Message;
 import org.apache.cassandra.net.MessagingService;
+import org.apache.cassandra.repair.autorepair.AutoRepair;
+import org.apache.cassandra.repair.autorepair.AutoRepairKeyspace;
 import org.apache.cassandra.repair.RepairRunnable;
+import org.apache.cassandra.repair.autorepair.AutoRepairService;
 import org.apache.cassandra.repair.messages.RepairOption;
 import org.apache.cassandra.schema.CompactionParams.TombstoneOption;
 import org.apache.cassandra.schema.KeyspaceMetadata;
@@ -423,7 +426,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     /* Used for tracking drain progress */
     private volatile int totalCFs, remainingCFs;
 
-    private static final AtomicInteger nextRepairCommand = new AtomicInteger();
+    public static final AtomicInteger nextRepairCommand = new AtomicInteger();
 
     private final List<IEndpointLifecycleSubscriber> lifecycleSubscribers = new CopyOnWriteArrayList<>();
 
@@ -1355,6 +1358,8 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         setTokens(tokens);
 
         assert tokenMetadata.sortedTokens().size() > 0;
+
+        doAutoRepairSetup();
     }
 
     @VisibleForTesting
@@ -1376,6 +1381,18 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             Schema.instance.registerListener(new AuthSchemaChangeListener());
             authSetupComplete = true;
         }
+    }
+
+    private void doAutoRepairSetup()
+    {
+        if (DatabaseDescriptor.getAutoRepairOptions().isAutoRepairEnabled())
+        {
+            Schema.instance.transform(SchemaTransformations.updateSystemKeyspace(AutoRepairKeyspace.metadata(), AutoRepairKeyspace.GENERATION));
+            logger.info("Enable AutoRepair");
+            AutoRepair.instance.setup();
+        }
+        AutoRepairService.instance.setAutoRepairEnable(DatabaseDescriptor.getAutoRepairOptions().isAutoRepairEnabled());
+        logger.info("AutoRepair setup complete!");
     }
 
     public boolean isAuthSetupComplete()

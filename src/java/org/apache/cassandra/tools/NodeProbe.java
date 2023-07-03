@@ -38,9 +38,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 import javax.management.JMX;
@@ -85,13 +88,16 @@ import org.apache.cassandra.hints.HintsService;
 import org.apache.cassandra.hints.HintsServiceMBean;
 import org.apache.cassandra.locator.DynamicEndpointSnitchMBean;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
+import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.metrics.CassandraMetricsRegistry;
 import org.apache.cassandra.metrics.StorageMetrics;
 import org.apache.cassandra.metrics.TableMetrics;
 import org.apache.cassandra.metrics.ThreadPoolMetrics;
 import org.apache.cassandra.net.MessagingService;
 import org.apache.cassandra.net.MessagingServiceMBean;
+import org.apache.cassandra.repair.autorepair.AutoRepairService;
 import org.apache.cassandra.service.ActiveRepairServiceMBean;
+import org.apache.cassandra.repair.autorepair.AutoRepairServiceMBean;
 import org.apache.cassandra.service.CacheService;
 import org.apache.cassandra.service.CacheServiceMBean;
 import org.apache.cassandra.service.GCInspector;
@@ -139,6 +145,7 @@ public class NodeProbe implements AutoCloseable
     protected MBeanServerConnection mbeanServerConn;
     protected CompactionManagerMBean compactionProxy;
     protected StorageServiceMBean ssProxy;
+    protected AutoRepairServiceMBean autoRepairProxy;
     protected GossiperMBean gossProxy;
     protected MemoryMXBean memProxy;
     protected GCInspectorMXBean gcProxy;
@@ -281,6 +288,8 @@ public class NodeProbe implements AutoCloseable
             pcProxy = JMX.newMBeanProxy(mbeanServerConn, name, PermissionsCacheMBean.class);
             name = new ObjectName(AuthCache.MBEAN_NAME_BASE + RolesCache.CACHE_NAME);
             rcProxy = JMX.newMBeanProxy(mbeanServerConn, name, RolesCacheMBean.class);
+            name = new ObjectName(AutoRepairService.MBEAN_NAME);
+            autoRepairProxy = JMX.newMBeanProxy(mbeanServerConn, name, AutoRepairServiceMBean.class);
         }
         catch (MalformedObjectNameException e)
         {
@@ -2215,6 +2224,169 @@ public class NodeProbe implements AutoCloseable
     public int getDefaultKeyspaceReplicationFactor()
     {
         return ssProxy.getDefaultKeyspaceReplicationFactor();
+    }
+
+    public boolean isAutoRepairEnabled()
+    {
+        return autoRepairProxy.isAutoRepairEnabled();
+    }
+
+    public void setAutoRepairEnable(boolean autoRepairEnabled)
+    {
+        autoRepairProxy.setAutoRepairEnable(autoRepairEnabled);
+    }
+
+    public void setRepairThreads(int repairThreads)
+    {
+        autoRepairProxy.setRepairThreads(repairThreads);
+    }
+
+    public int getRepairThreads()
+    {
+        return autoRepairProxy.getRepairThreads();
+    }
+
+    public void setRepairPriorityForHosts(Set<InetAddressAndPort> hosts)
+    {
+        autoRepairProxy.setRepairPriorityForHosts(hosts);
+    }
+
+    public Set<InetAddressAndPort> getRepairPriorityForHosts()
+    {
+        return autoRepairProxy.getRepairHostPriority();
+    }
+
+    public void setForceRepairForHosts(Set<InetAddressAndPort> hosts){
+        autoRepairProxy.setForceRepairForHosts(hosts);
+    }
+
+    public int getRepairSubRangeNum()
+    {
+        return autoRepairProxy.getRepairSubRangeNum();
+    }
+
+    public void setRepairSubRangeNum(int repairSubRanges)
+    {
+        autoRepairProxy.setRepairSubRangeNum(repairSubRanges);
+    }
+
+    public int getRepairMinFrequencyInHours()
+    {
+        return autoRepairProxy.getRepairMinFrequencyInHours();
+    }
+
+    public void setRepairMinFrequencyInHours(int repairMinFrequencyInHours)
+    {
+        autoRepairProxy.setRepairMinFrequencyInHours(repairMinFrequencyInHours);
+    }
+
+    public int getAutoRepairHistoryClearDeleteHostsBufferInSec()
+    {
+        return autoRepairProxy.getAutoRepairHistoryClearDeleteHostsBufferInSec();
+    }
+
+    public void setAutoRepairHistoryClearDeleteHostsBufferInSec(int seconds)
+    {
+        autoRepairProxy.setAutoRepairHistoryClearDeleteHostsBufferInSec(seconds);
+    }
+
+    public int getRepairSSTableCountHigherThreshold()
+    {
+        return autoRepairProxy.getRepairSSTableCountHigherThreshold();
+    }
+
+    public void setRepairSSTableCountHigherThreshold(int ssTableHigherThreshold)
+    {
+        autoRepairProxy.setRepairSSTableCountHigherThreshold(ssTableHigherThreshold);
+    }
+
+    public String getRepairIgnoreKeyspaces()
+    {
+        return autoRepairProxy.getRepairIgnoreKeyspaces() == null? "" : autoRepairProxy.getRepairIgnoreKeyspaces().toString();
+    }
+
+    public void setRepairIgnoreKeyspaces(String ignoreKeyspaceRegex)
+    {
+        autoRepairProxy.setRepairIgnoreKeyspaces(Pattern.compile(ignoreKeyspaceRegex));
+    }
+
+    public String getRepairOnlyKeyspaces()
+    {
+        return autoRepairProxy.getRepairOnlyKeyspaces() == null? "" : autoRepairProxy.getRepairOnlyKeyspaces().toString();
+    }
+
+    public void setRepairOnlyKeyspaces(String repairOnlyKeyspacesRegex)
+    {
+        autoRepairProxy.setRepairOnlyKeyspaces(Pattern.compile(repairOnlyKeyspacesRegex));
+    }
+
+    public long getAutoRepairTableMaxRepairTimeInSec()
+    {
+        return autoRepairProxy.getAutoRepairTableMaxRepairTimeInSec();
+    }
+
+    public void setAutoRepairTableMaxRepairTimeInSec(long autoRepairTableMaxRepairTimeInSec)
+    {
+        autoRepairProxy.setAutoRepairTableMaxRepairTimeInSec(autoRepairTableMaxRepairTimeInSec);
+    }
+
+    public Set<String> getAutoRepairIgnoreDCs()
+    {
+        return autoRepairProxy.getIgnoreDCs();
+    }
+
+    public void setAutoRepairIgnoreDCs(Set<String> ignoreDCs)
+    {
+        autoRepairProxy.setIgnoreDCs(ignoreDCs);
+    }
+
+    public Set<Set<String>> getDCGroups() {
+        return autoRepairProxy.getDCGroups();
+    }
+
+    public Set<String> getOnGoingRepairHostIdsByGroupHash(int groupHash)
+    {
+        return autoRepairProxy.getOnGoingRepairHostIdsByGroupHash(groupHash);
+    }
+
+    public Set<String> getOnGoingForceRepairHostIdsByGroupHash(int groupHash)
+    {
+        return autoRepairProxy.getOnGoingForceRepairHostIdsByGroupHash(groupHash);
+    }
+
+    public void setDCGourps(Set<Set<String>> dcGourps) {
+        autoRepairProxy.setDCGourps(dcGourps);
+    }
+
+    public TreeSet<UUID> getCurrentRingHostIds()
+    {
+        return autoRepairProxy.getCurrentRingHostIds();
+    }
+
+    public int getParallelRepairPercentageInGroup() {
+        return autoRepairProxy.getParallelRepairPercentageInGroup();
+    }
+
+    public void setParallelRepairPercentageInGroup(int percentageInGroup) {
+        autoRepairProxy.setParallelRepairPercentageInGroup(percentageInGroup);
+    }
+
+    public int getParallelRepairCountInGroup() {
+        return autoRepairProxy.getParallelRepairCountInGroup();
+    }
+
+    public void setParallelRepairCountInGroup(int countInGroup) {
+        autoRepairProxy.setParallelRepairCountInGroup(countInGroup);
+    }
+
+    public boolean getPrimaryTokenRangeOnly()
+    {
+        return autoRepairProxy.getRepairPrimaryTokenRangeOnly();
+    }
+
+    public void setPrimaryTokenRangeOnly(boolean primaryTokenRangeOnly)
+    {
+        autoRepairProxy.setPrimaryTokenRangeOnly(primaryTokenRangeOnly);
     }
 }
 

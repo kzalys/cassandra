@@ -51,6 +51,9 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
+import org.apache.cassandra.repair.autorepair.AutoRepairStatus;
+import org.apache.cassandra.repair.autorepair.GetAutoRepairConfig;
+import org.apache.cassandra.repair.autorepair.SetAutoRepairConfig;
 import org.apache.cassandra.tools.nodetool.*;
 import org.apache.cassandra.utils.FBUtilities;
 
@@ -95,6 +98,7 @@ public class NodeTool
     {
         List<Class<? extends NodeToolCmdRunnable>> commands = newArrayList(
                 Assassinate.class,
+                AutoRepairStatus.class,
                 CassHelp.class,
                 CfHistograms.class,
                 CfStats.class,
@@ -133,6 +137,7 @@ public class NodeTool
                 GcStats.class,
                 GetAuditLog.class,
                 GetAuthCacheConfig.class,
+                GetAutoRepairConfig.class,
                 GetBatchlogReplayTrottle.class,
                 GetColumnIndexSize.class,
                 GetCompactionThreshold.class,
@@ -191,6 +196,7 @@ public class NodeTool
                 Ring.class,
                 Scrub.class,
                 SetAuthCacheConfig.class,
+                SetAutoRepairConfig.class,
                 SetBatchlogReplayThrottle.class,
                 SetCacheCapacity.class,
                 SetCacheKeysToSave.class,
