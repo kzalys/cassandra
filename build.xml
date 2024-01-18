@@ -1361,7 +1361,9 @@
 
   <!--
     Run named ant task with jacoco, such as "ant jacoco-run -Dtaskname=test"
-    the target run must enable the jacoco agent if usejacoco is 'yes' -->
+    the target run must enable the jacoco agent if usejacoco is 'yes'
+    e.g., ant codecoverage -Dtaskname=testsome  -Dtest.name=org.apache.cassandra.repair.RepairJobTest
+     -->
   <target name="jacoco-run" description="run named task with jacoco instrumentation">
     <condition property="runtask" value="${taskname}" else="test">
       <isset property="taskname"/>
@@ -1594,7 +1596,7 @@
       <structure name="JaCoCo Cassandara Coverage Report">
         <classfiles>
           <fileset dir="${build.classes.main}">
-            <include name="**/*.class"/>
+              <include name="**/*.class"/>
           </fileset>
         </classfiles>
         <sourcefiles encoding="UTF-8">

@@ -82,6 +82,7 @@ import org.apache.cassandra.utils.asserts.SyncTaskListAssert;
 import static java.util.Collections.emptySet;
 import static org.apache.cassandra.repair.RepairParallelism.SEQUENTIAL;
 import static org.apache.cassandra.streaming.PreviewKind.NONE;
+import static org.apache.cassandra.streaming.PreviewKind.REPAIRED;
 import static org.apache.cassandra.utils.TimeUUID.Generator.nextTimeUUID;
 import static org.apache.cassandra.utils.asserts.SyncTaskAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -909,5 +910,25 @@ public class RepairJobTest
                 }
                 return false;
         });
+    }
+
+    @Test
+    public void testGetNowInSeconds()
+    {
+        Set<InetAddressAndPort> neighbors = new HashSet<>(Arrays.asList(addr2, addr3));
+        RepairJob job1 = new RepairJob(new MeasureableRepairSession(nextTimeUUID(),
+                new CommonRange(neighbors, emptySet(), FULL_RANGE),
+                KEYSPACE, SEQUENTIAL, false, false,
+                NONE, false, true, false, CF), CF);
+        long l1 = job1.getNowInSeconds();
+        assertTrue(l1 > 0);
+
+
+        RepairJob job2 = new RepairJob(new MeasureableRepairSession(nextTimeUUID(),
+                new CommonRange(neighbors, emptySet(), FULL_RANGE),
+                KEYSPACE, SEQUENTIAL, false, false,
+                REPAIRED, false, true, false, CF), CF);
+        long l2 = job2.getNowInSeconds();
+        assertTrue(l2 >= l1+DatabaseDescriptor.getValidationPreviewPurgeHeadStartInSec());
     }
 }
