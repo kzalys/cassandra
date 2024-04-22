@@ -38,7 +38,6 @@ import org.apache.cassandra.concurrent.ScheduledExecutorPlus;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.Keyspace;
-import org.apache.cassandra.dht.Murmur3Partitioner;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.gms.Gossiper;
@@ -50,6 +49,7 @@ import org.apache.cassandra.schema.Tables;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.streaming.PreviewKind;
 import org.apache.cassandra.utils.FBUtilities;
+import org.apache.cassandra.utils.Pair;
 import org.apache.cassandra.utils.concurrent.Condition;
 import org.apache.cassandra.utils.progress.ProgressEvent;
 import org.apache.cassandra.utils.progress.ProgressEventType;
@@ -66,8 +66,8 @@ import static org.apache.cassandra.utils.concurrent.Condition.newOneTimeConditio
  * This class is designed to run start automatic repair on Cassandra cluster where repair was not in past and now we
  * would like to start repair w/o impacting production workload. Here is how it works:
  * a. It sorts all the nodes's uuid in the auto repair ring and checks whose turn it is to run repair
- *      1. auto repair ring is not same as the Cassandra instance ring. It can be defined by the auto_repair_dc_groups
- *      2. The node with the longest unrepaired time within the auto repair ring will be chosen to run repair
+ * 1. auto repair ring is not same as the Cassandra instance ring. It can be defined by the auto_repair_dc_groups
+ * 2. The node with the longest unrepaired time within the auto repair ring will be chosen to run repair
  * b. After node makes a decision to run repair, full sub-range repair is triggered one table at a time
  * If at any point #of unrepaired sstable count goes beyond certain threshold then simply ignore such table as
  * there maybe some challenges to repair such a large table
@@ -107,7 +107,10 @@ public class AutoRepair
     }
 
     @VisibleForTesting
-    public static void setLastRepairTimeInMs(long lastRepairTime) {lastRepairTimeInMs = lastRepairTime; }
+    public static void setLastRepairTimeInMs(long lastRepairTime)
+    {
+        lastRepairTimeInMs = lastRepairTime;
+    }
 
     public static int getClusterRepairTimeInSec()
     {
@@ -131,10 +134,11 @@ public class AutoRepair
 
     public static int getLongestUnrepairedSec()
     {
-        if (longestUnrepairedNode == null) {
+        if (longestUnrepairedNode == null)
+        {
             return 0;
         }
-        return (int)TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - longestUnrepairedNode.lastRepairFinishTime );
+        return (int) TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - longestUnrepairedNode.lastRepairFinishTime);
     }
 
     public static int getRepairFailedTablesCount()
@@ -149,22 +153,22 @@ public class AutoRepair
         AutoRepairService.instance.setRepairSubRangeNum(DatabaseDescriptor.getAutoRepairOptions().getAutoRepairNumberOfSubRanges());
         AutoRepairService.instance.setRepairThreads(DatabaseDescriptor.getAutoRepairOptions().getAutoRepairNumberOfRepairThreads());
         AutoRepairService.instance.setRepairSSTableCountHigherThreshold(DatabaseDescriptor.getAutoRepairOptions()
-                .getAutoRepairSSTableUpperThreshold());
+                                                                                          .getAutoRepairSSTableUpperThreshold());
         AutoRepairService.instance.setRepairMinFrequencyInHours(DatabaseDescriptor.getAutoRepairOptions()
-                .getAutoRepairMinRepairFrequencyInHours());
+                                                                                  .getAutoRepairMinRepairFrequencyInHours());
         AutoRepairService.instance.setAutoRepairTableMaxRepairTimeInSec(DatabaseDescriptor.getAutoRepairOptions()
-                .getAutoRepairTableMaxRepairTimeInSec());
+                                                                                          .getAutoRepairTableMaxRepairTimeInSec());
         AutoRepairService.instance.setAutoRepairHistoryClearDeleteHostsBufferInSec(DatabaseDescriptor.getAutoRepairOptions().getAutoRepairHistoryClearDeleteHostsBufferInSec());
 
         if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairIgnoreKeyspaces().length() > 0)
         {
             AutoRepairService.instance.setRepairIgnoreKeyspaces(Pattern.compile(DatabaseDescriptor.getAutoRepairOptions()
-                    .getAutoRepairIgnoreKeyspaces()));
+                                                                                                  .getAutoRepairIgnoreKeyspaces()));
         }
         if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairOnlyKeyspaces().length() > 0)
         {
             AutoRepairService.instance.setRepairOnlyKeyspaces(Pattern.compile(DatabaseDescriptor.getAutoRepairOptions()
-                    .getAutoRepairOnlyKeyspaces()));
+                                                                                                .getAutoRepairOnlyKeyspaces()));
         }
         Set<String> ignoreDCs = new HashSet<>();
         if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairIgnoreDC().length() > 0)
@@ -180,10 +184,13 @@ public class AutoRepair
         AutoRepairService.instance.setParallelRepairCountInGroup(DatabaseDescriptor.getAutoRepairOptions().getAutoRepairParallelRepairCountInGroup());
 
         Set<Set<String>> DCGroups = new HashSet<>();
-        if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairDCGroups().length() > 0) {
-            for (String group : DatabaseDescriptor.getAutoRepairOptions().getAutoRepairDCGroups().split("\\|")) {
+        if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairDCGroups().length() > 0)
+        {
+            for (String group : DatabaseDescriptor.getAutoRepairOptions().getAutoRepairDCGroups().split("\\|"))
+            {
                 Set<String> dataCenters = new HashSet<>();
-                for (String dc : group.split(",")) {
+                for (String dc : group.split(","))
+                {
                     dataCenters.add(dc);
                 }
                 DCGroups.add(dataCenters);
@@ -196,12 +203,13 @@ public class AutoRepair
 
         if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairAutoSchedule())
             repairExecutor.scheduleWithFixedDelay(() -> repair(60000),
-                    30,
-                    DatabaseDescriptor.getAutoRepairOptions().getAutoRepairCheckInterval(),
-                    TimeUnit.SECONDS);
+                                                  30,
+                                                  DatabaseDescriptor.getAutoRepairOptions().getAutoRepairCheckInterval(),
+                                                  TimeUnit.SECONDS);
     }
 
-    public static void runRepair(long millisToWait) {
+    public static void runRepair(long millisToWait)
+    {
         AutoRepair.repairExecutor.submit(() -> repair(millisToWait));
     }
 
@@ -248,7 +256,7 @@ public class AutoRepair
                     if (timeElapsedSinceLastRepairInHours < AutoRepairService.instance.getRepairMinFrequencyInHours())
                     {
                         logger.info("Too soon to run repair, last repair was done {} hour(s) ago",
-                                timeElapsedSinceLastRepairInHours);
+                                    timeElapsedSinceLastRepairInHours);
                         return;
                     }
                 }
@@ -275,7 +283,8 @@ public class AutoRepair
 
                     repairKeyspaceCount++;
                     List<String> tablesToBeRepaired = new ArrayList<>();
-                    while (iter.hasNext()) {
+                    while (iter.hasNext())
+                    {
                         totalTablesConsideredForRepair++;
                         String tableName = iter.next().name;
 
@@ -295,25 +304,22 @@ public class AutoRepair
                     {
                         try
                         {
-                            if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace()) {
+                            if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace())
+                            {
                                 logger.info("Repair keyspace {} for tables: {}", keyspaceName, tablesToBeRepaired);
-                            } else {
+                            }
+                            else
+                            {
                                 logger.info("Repair table {}.{}", keyspaceName, tableName);
                             }
                             long startTime = System.currentTimeMillis();
                             //now run full repair on this table
-                            Collection<Range<Token>> tokens = StorageService.instance.getPrimaryRanges(keyspaceName);
-                            if (!primaryRangeOnly)
-                            {
-                                // if we need to repair non-primary token ranges, then change the tokens accrodingly
-                                tokens = StorageService.instance.getLocalReplicas(keyspaceName).ranges();
-                            }
                             boolean repairSuccess = true;
                             Set<Range<Token>> ranges = new HashSet<>();
-                            int numberOfSubranges = AutoRepairService.instance.getRepairSubRangeNum();
-                            int totalSubRanges = tokens.size() * numberOfSubranges;
                             int totalProcessedSubRanges = 0;
-                            for (Range<Token> token : tokens)
+                            List<Pair<Token, Token>> subRangesToBeRepaired = new AutoRepairTokenRangeDefault().getRange(primaryRangeOnly, keyspaceName);
+                            int totalSubRanges = subRangesToBeRepaired.size();
+                            for (Pair<Token, Token> token : subRangesToBeRepaired)
                             {
                                 if (!AutoRepairService.instance.isAutoRepairEnabled())
                                 {
@@ -322,14 +328,18 @@ public class AutoRepair
                                     return;
                                 }
 
-                                if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace()) {
-                                    if (AutoRepairUtils.keyspaceMaxRepairTimeExceeded(startTime, tablesToBeRepaired.size())) {
+                                if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace())
+                                {
+                                    if (AutoRepairUtils.keyspaceMaxRepairTimeExceeded(startTime, tablesToBeRepaired.size()))
+                                    {
                                         repairTableSkipCount += tablesToBeRepaired.size();
                                         logger.info("Keyspace took too much time to repair hence skipping it {}",
                                                     keyspaceName);
                                         break;
                                     }
-                                } else {
+                                }
+                                else
+                                {
                                     if (AutoRepairUtils.tableMaxRepairTimeExceeded(startTime))
                                     {
                                         repairTableSkipCount++;
@@ -339,111 +349,90 @@ public class AutoRepair
                                     }
                                 }
 
-                                Murmur3Partitioner.LongToken l = (Murmur3Partitioner.LongToken) (token.left);
-                                Murmur3Partitioner.LongToken r = (Murmur3Partitioner.LongToken) (token.right);
-                                Token parentStartToken = StorageService.instance.getTokenMetadata()
-                                        .partitioner.getTokenFactory().fromString("" + l.getTokenValue());
-                                Token parentEndToken = StorageService.instance.getTokenMetadata()
-                                        .partitioner.getTokenFactory().fromString("" + r.getTokenValue());
-                                logger.debug("Parent Token Left side {}, right side {}", parentStartToken.toString(),
-                                        parentEndToken.toString());
+                                Token childStartToken = token.left;
+                                Token childEndToken = token.right;
 
-                                long left = (Long) l.getTokenValue();
-                                long right = (Long) r.getTokenValue();
-                                long repairTokenWidth = (right - left) / numberOfSubranges;
-                                if ((right - left) < numberOfSubranges)
+                                logger.debug("Current Token Left side {}, right side {}", childStartToken
+                                                                                          .toString(), childEndToken.toString());
+                                ranges.add(new Range<>(childStartToken, childEndToken));
+                                totalProcessedSubRanges++;
+                                if ((totalProcessedSubRanges % AutoRepairService.instance.getRepairThreads() == 0) ||
+                                    (totalProcessedSubRanges == totalSubRanges))
                                 {
-                                    logger.warn("Too many sub-ranges are given {}", numberOfSubranges);
-                                    numberOfSubranges = (int) (right - left) == 0 ? 1 : (int) (right - left);
-                                    repairTokenWidth = 1;
-                                    totalSubRanges = tokens.size() * numberOfSubranges;
-                                }
-                                for (int i = 0; i < numberOfSubranges; i++)
-                                {
-                                    long curLeft = left + (i * repairTokenWidth);
-                                    long curRight = curLeft + repairTokenWidth;
-
-                                    if ((i + 1) == numberOfSubranges)
+                                    RepairOption options = new RepairOption(RepairParallelism.PARALLEL, primaryRangeOnly, false,
+                                                                            false, AutoRepairService.instance.getRepairThreads(), ranges, !ranges.isEmpty(), false,
+                                                                            false, PreviewKind.NONE, false, true,
+                                                                            false, false);
+                                    if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace())
                                     {
-                                        curRight = right;
+                                        // repair all tables in one go
+                                        options.getColumnFamilies().addAll(tablesToBeRepaired);
+                                    }
+                                    else
+                                    {
+                                        options.getColumnFamilies().add(tableName);
+                                    }
+                                    int repairCmdId = StorageService.instance.nextRepairCommand.incrementAndGet();
+                                    RepairRunnable task = new RepairRunnable(StorageService.instance, repairCmdId, options, keyspaceName);
+                                    RepairStatus rs = new RepairStatus();
+                                    task.addProgressListener(rs);
+                                    new Thread(NamedThreadFactory.createThread(task, "auto-repair-thread")).start();
+                                    try
+                                    {
+                                        rs.waitForRepairToComplete();
+                                    }
+                                    catch (InterruptedException e)
+                                    {
+                                        logger.error("Exception in cond await:", e);
                                     }
 
-                                    Token childStartToken = StorageService.instance.getTokenMetadata()
-                                            .partitioner.getTokenFactory().fromString("" + curLeft);
-                                    Token childEndToken = StorageService.instance.getTokenMetadata()
-                                            .partitioner.getTokenFactory().fromString("" + curRight);
-                                    logger.debug("Current Token Left side {}, right side {}", childStartToken
-                                            .toString(), childEndToken.toString());
-
-                                    ranges.add(new Range<>(childStartToken, childEndToken));
-                                    totalProcessedSubRanges++;
-                                    if ((totalProcessedSubRanges % AutoRepairService.instance.getRepairThreads() == 0) ||
-                                            (totalProcessedSubRanges == totalSubRanges))
+                                    //check repair status
+                                    if (rs.success)
                                     {
-                                        RepairOption options = new RepairOption(RepairParallelism.PARALLEL, primaryRangeOnly, false,
-                                                                                false, AutoRepairService.instance.getRepairThreads(), ranges, !ranges.isEmpty(), false,
-                                                                                false, PreviewKind.NONE, false, true,
-                                                                                false, false);
-                                        if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace()) {
-                                            // repair all tables in one go
-                                            options.getColumnFamilies().addAll(tablesToBeRepaired);
-                                        } else {
-                                            options.getColumnFamilies().add(tableName);
-                                        }
-                                        int repairCmdId = StorageService.instance.nextRepairCommand.incrementAndGet();
-                                        RepairRunnable task = new RepairRunnable(StorageService.instance, repairCmdId, options, keyspaceName);
-                                        RepairStatus rs = new RepairStatus();
-                                        task.addProgressListener(rs);
-                                        new Thread(NamedThreadFactory.createThread(task, "auto-repair-thread")).start();
-                                        try
-                                        {
-                                            rs.waitForRepairToComplete();
-                                        }
-                                        catch (InterruptedException e)
-                                        {
-                                            logger.error("Exception in cond await:", e);
-                                        }
-
-                                        //check repair status
-                                        if (rs.success)
-                                        {
-                                            logger.info("Repair completed for range {}-{} for {}.{}, total subranges: {}," +
-                                                        "processed subranges: {}", childStartToken.toString(), childEndToken.toString(),
-                                                        keyspaceName, DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace() ? tablesToBeRepaired : tableName, totalSubRanges, totalProcessedSubRanges);
-                                        }
-                                        else
-                                        {
-                                            repairSuccess = false;
-                                            //in future we can add retry, etc.
-                                            logger.info("Repair failed for range {}-{} for {}.{} total subranges: {}," +
-                                                        "processed subranges: {}", childStartToken.toString(), childEndToken.toString(),
-                                                        keyspaceName, DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace() ? tablesToBeRepaired : tableName, totalSubRanges, totalProcessedSubRanges);
-                                        }
-                                        ranges.clear();
+                                        logger.info("Repair completed for range {}-{} for {}.{}, total subranges: {}," +
+                                                    "processed subranges: {}", childStartToken.toString(), childEndToken.toString(),
+                                                    keyspaceName, DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace() ? tablesToBeRepaired : tableName, totalSubRanges, totalProcessedSubRanges);
                                     }
+                                    else
+                                    {
+                                        repairSuccess = false;
+                                        //in future we can add retry, etc.
+                                        logger.info("Repair failed for range {}-{} for {}.{} total subranges: {}," +
+                                                    "processed subranges: {}", childStartToken.toString(), childEndToken.toString(),
+                                                    keyspaceName, DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace() ? tablesToBeRepaired : tableName, totalSubRanges, totalProcessedSubRanges);
+                                    }
+                                    ranges.clear();
                                 }
                             }
                             if (repairSuccess)
                             {
-                                if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace()) {
+                                if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace())
+                                {
                                     repairTableSuccessCount += tablesToBeRepaired.size();
-                                } else {
+                                }
+                                else
+                                {
                                     repairTableSuccessCount++;
                                 }
-
                             }
                             else
                             {
-                                if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace()) {
+                                if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace())
+                                {
                                     repairTableFailureCount += tablesToBeRepaired.size();
-                                } else {
+                                }
+                                else
+                                {
                                     repairTableFailureCount++;
                                 }
                             }
-                            if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace()) {
+                            if (DatabaseDescriptor.getAutoRepairOptions().getAutoRepairByKeyspace())
+                            {
                                 logger.info("Repair completed for keyspace {}, tables: {}", keyspaceName, tablesToBeRepaired);
                                 break;
-                            } else {
+                            }
+                            else
+                            {
                                 logger.info("Repair completed for {}.{}", keyspaceName, tableName);
                             }
                         }
@@ -461,19 +450,19 @@ public class AutoRepair
                     AutoRepairUtils.removePriorityStatus(myId);
                 }
 
-                nodeRepairTimeInSec = (int)stopWatch.elapsed(TimeUnit.SECONDS);
+                nodeRepairTimeInSec = (int) stopWatch.elapsed(TimeUnit.SECONDS);
                 long timeInHours = TimeUnit.SECONDS.toHours(nodeRepairTimeInSec);
                 logger.info("Local repair time {} hour(s), stats: repairKeyspaceCount {}, " +
-                                "repairTableSuccessCount {}, repairTableFailureCount {}, " +
-                                "repairTableSkipCount {}", timeInHours,
-                        repairKeyspaceCount,
-                        repairTableSuccessCount,
-                        repairTableFailureCount,
-                        repairTableSkipCount);
+                            "repairTableSuccessCount {}, repairTableFailureCount {}, " +
+                            "repairTableSkipCount {}", timeInHours,
+                            repairKeyspaceCount,
+                            repairTableSuccessCount,
+                            repairTableFailureCount,
+                            repairTableSkipCount);
                 if (lastRepairTimeInMs != 0)
                 {
-                    clusterRepairTimeInSec = (int)TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() -
-                            lastRepairTimeInMs);
+                    clusterRepairTimeInSec = (int) TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() -
+                                                                                   lastRepairTimeInMs);
                     logger.info("Cluster repair time {} day(s)", TimeUnit.SECONDS.toDays(clusterRepairTimeInSec));
                 }
                 lastRepairTimeInMs = System.currentTimeMillis();
@@ -496,7 +485,6 @@ public class AutoRepair
         {
             logger.error("Exception in autorepair:", e);
         }
-
     }
 }
 
