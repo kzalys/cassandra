@@ -119,18 +119,6 @@ public class AutoRepairService implements AutoRepairServiceMBean
     }
 
     @Override
-    public void setRepairIgnoreKeyspaces(RepairType repairType, String ignoreKeyspaceRegex)
-    {
-        config.setRepairIgnoreKeyspaces(repairType, ignoreKeyspaceRegex);
-    }
-
-    @Override
-    public void setRepairOnlyKeyspaces(RepairType repairType, String repairOnlyKeyspacesRegex)
-    {
-        config.setRepairOnlyKeyspaces(repairType, repairOnlyKeyspacesRegex);
-    }
-
-    @Override
     public void setAutoRepairTableMaxRepairTimeInSec(RepairType repairType, long autoRepairTableMaxRepairTimeInSec)
     {
         config.setAutoRepairTableMaxRepairTimeInSec(repairType, autoRepairTableMaxRepairTimeInSec);

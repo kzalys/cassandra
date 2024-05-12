@@ -42,8 +42,8 @@ public class SetAutoRepairConfig extends NodeToolCmd
     @VisibleForTesting
     @Arguments(title = "<autorepairparam> <value>", usage = "<autorepairparam> <value>",
     description = "autorepair param and value.\nPossible autorepair parameters are as following: " +
-                  "[threads|subranges|minrepairfreqinhours|minrepairintervalinhours|sstablehigherthreshold|ignorekeyspacesregex" +
-                  "|enabled|repaironlykeyspacesregex|tablemaxrepairtimeinsec|priorityhost|forcerepairhosts|ignoredcs" +
+                  "[threads|subranges|minrepairintervalinhours|sstablehigherthreshold" +
+                  "|enabled|tablemaxrepairtimeinsec|priorityhost|forcerepairhosts|ignoredcs" +
                   "|historydeletehostsclearbufferinsec|primarytokenrangeonly|parallelrepaircount|parallelrepairpercentage|mvrepairenabled]",
     required = true)
     protected List<String> args = new ArrayList<>();
@@ -94,12 +94,6 @@ public class SetAutoRepairConfig extends NodeToolCmd
                 break;
             case "sstablehigherthreshold":
                 probe.setRepairSSTableCountHigherThreshold(repairType, Integer.parseInt(paramVal));
-                break;
-            case "ignorekeyspacesregex":
-                probe.setRepairIgnoreKeyspaces(repairType, paramVal);
-                break;
-            case "repaironlykeyspacesregex":
-                probe.setRepairOnlyKeyspaces(repairType, paramVal);
                 break;
             case "tablemaxrepairtimeinsec":
                 probe.setAutoRepairTableMaxRepairTimeInSec(repairType, Long.parseLong(paramVal));

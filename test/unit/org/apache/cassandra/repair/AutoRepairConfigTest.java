@@ -279,42 +279,6 @@ public class AutoRepairConfigTest extends CQLTester
     }
 
     @Test
-    public void testGetRepairIgnoreKeyspaces()
-    {
-        config.global_settings.ignore_keyspaces = "keyspace1";
-
-        String result = config.getRepairIgnoreKeyspaces(repairType);
-
-        assertEquals("keyspace1", result);
-    }
-
-    @Test
-    public void testSetRepairIgnoreKeyspaces()
-    {
-        config.setRepairIgnoreKeyspaces(repairType, "keyspace1");
-
-        assertEquals(config.repair_type_overrides.get(repairType).ignore_keyspaces, "keyspace1");
-    }
-
-    @Test
-    public void testGetRepairOnlyKeyspaces()
-    {
-        config.global_settings.repair_only_keyspaces = "keyspace1";
-
-        String result = config.getRepairOnlyKeyspaces(repairType);
-
-        assertEquals("keyspace1", result);
-    }
-
-    @Test
-    public void testSetRepairOnlyKeyspaces()
-    {
-        config.setRepairOnlyKeyspaces(repairType, "keyspace1");
-
-        assertEquals(config.repair_type_overrides.get(repairType).repair_only_keyspaces, "keyspace1");
-    }
-
-    @Test
     public void testGetAutoRepairTableMaxRepairTimeInSec()
     {
         config.global_settings.table_max_repair_time_in_sec = (long) 5;
@@ -474,44 +438,6 @@ public class AutoRepairConfigTest extends CQLTester
         boolean result = config.isAutoRepairSchedulingEnabled();
 
         assertTrue(result);
-    }
-
-    @Test
-    public void testApplyOverridesUsesDefaultOptions()
-    {
-        config.repair_type_overrides.put(repairType, null);
-        config.global_settings = null;
-        Options.defaultOptions.ignore_keyspaces = "testtest";
-
-        assertEquals("testtest", config.applyOverrides(repairType, opt -> opt.ignore_keyspaces));
-
-        Options.defaultOptions.ignore_keyspaces = Options.getDefaultOptions().ignore_keyspaces;
-    }
-
-    @Test
-    public void testApplyOverridesUsesGlobalSettings()
-    {
-        config.repair_type_overrides.put(repairType, null);
-        config.global_settings.ignore_keyspaces = "testtest";
-        Options.defaultOptions.ignore_keyspaces = null;
-
-        assertEquals("testtest", config.applyOverrides(repairType, opt -> opt.ignore_keyspaces));
-
-        Options.defaultOptions.ignore_keyspaces = Options.getDefaultOptions().ignore_keyspaces;
-    }
-
-    @Test
-    public void testApplyOverridesUsesRepairTypeOptions()
-    {
-        Options repairTypeOverride = new Options();
-        repairTypeOverride.ignore_keyspaces = "testtest";
-        config.repair_type_overrides.put(repairType, repairTypeOverride);
-        config.global_settings = null;
-        Options.defaultOptions.ignore_keyspaces = null;
-
-        assertEquals("testtest", config.applyOverrides(repairType, opt -> opt.ignore_keyspaces));
-
-        Options.defaultOptions.ignore_keyspaces = Options.getDefaultOptions().ignore_keyspaces;
     }
 
     @Test

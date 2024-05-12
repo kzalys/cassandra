@@ -60,7 +60,6 @@ import static org.apache.cassandra.repair.AutoRepairUtilsV2.COL_REPAIR_PRIORITY;
 import static org.apache.cassandra.repair.AutoRepairUtilsV2.COL_REPAIR_START_TS;
 import static org.apache.cassandra.repair.AutoRepairUtilsV2.COL_REPAIR_TURN;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -455,33 +454,6 @@ public class AutoRepairUtilsV2Test extends CQLTester
         assertNotNull(hosts);
         assertEquals(1, hosts.size());
         assertTrue(hosts.contains(localEndpoint));
-    }
-
-    @Test
-    public void testShouldRepair_empty_allowlist_and_denylist()
-    {
-        DatabaseDescriptor.getAutoRepairConfig().setRepairOnlyKeyspaces(repairType, "");
-        DatabaseDescriptor.getAutoRepairConfig().setRepairIgnoreKeyspaces(repairType, "");
-
-        assertTrue(AutoRepairUtilsV2.shouldRepair(repairType, "ks1"));
-    }
-
-    @Test
-    public void testShouldRepair_allowlist()
-    {
-        DatabaseDescriptor.getAutoRepairConfig().setRepairOnlyKeyspaces(repairType, "ks\\d");
-        DatabaseDescriptor.getAutoRepairConfig().setRepairIgnoreKeyspaces(repairType, "");
-
-        assertTrue(AutoRepairUtilsV2.shouldRepair(repairType, "ks1"));
-    }
-
-    @Test
-    public void testShouldRepair_denylist()
-    {
-        DatabaseDescriptor.getAutoRepairConfig().setRepairOnlyKeyspaces(repairType, "");
-        DatabaseDescriptor.getAutoRepairConfig().setRepairIgnoreKeyspaces(repairType, "ks\\d");
-
-        assertFalse(AutoRepairUtilsV2.shouldRepair(repairType, "ks1"));
     }
 
     @Test

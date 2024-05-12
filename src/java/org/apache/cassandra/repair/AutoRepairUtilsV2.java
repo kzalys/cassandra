@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
+import org.apache.cassandra.locator.LocalStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -819,20 +820,6 @@ public class AutoRepairUtilsV2
         return hosts;
     }
 
-    public static boolean shouldRepair(RepairType repairType, String keyspace)
-    {
-        AutoRepairConfig config = AutoRepairService.instance.getAutoRepairConfig();
-        if (!config.getRepairOnlyKeyspaces(repairType).isEmpty())
-        {
-            return Pattern.matches(config.getRepairOnlyKeyspaces(repairType), keyspace);
-        }
-        else if (!config.getRepairIgnoreKeyspaces(repairType).isEmpty())
-        {
-            return !Pattern.matches(config.getRepairIgnoreKeyspaces(repairType), keyspace);
-        }
-        return true;
-    }
-
     public static boolean checkNodeContainsKeyspaceReplica(Keyspace ks)
     {
         AbstractReplicationStrategy replicationStrategy = ks.getReplicationStrategy();
@@ -845,6 +832,10 @@ public class AutoRepairUtilsV2
             {
                 ksReplicaOnNode = false;
             }
+        }
+        if (replicationStrategy instanceof LocalStrategy)
+        {
+            ksReplicaOnNode = false;
         }
         return ksReplicaOnNode;
     }

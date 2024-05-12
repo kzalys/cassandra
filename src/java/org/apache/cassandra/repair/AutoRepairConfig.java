@@ -149,26 +149,6 @@ public class AutoRepairConfig implements Serializable
         repair_type_overrides.get(repairType).sstable_upper_threshold = sstableHigherThreshold;
     }
 
-    public String getRepairIgnoreKeyspaces(RepairType repairType)
-    {
-        return applyOverrides(repairType, opt -> opt.ignore_keyspaces);
-    }
-
-    public void setRepairIgnoreKeyspaces(RepairType repairType, String ignoreKeyspace)
-    {
-        repair_type_overrides.get(repairType).ignore_keyspaces = ignoreKeyspace;
-    }
-
-    public String getRepairOnlyKeyspaces(RepairType repairType)
-    {
-        return applyOverrides(repairType, opt -> opt.repair_only_keyspaces);
-    }
-
-    public void setRepairOnlyKeyspaces(RepairType repairType, String repairOnlyKeyspaces)
-    {
-        repair_type_overrides.get(repairType).repair_only_keyspaces = repairOnlyKeyspaces;
-    }
-
     public long getAutoRepairTableMaxRepairTimeInSec(RepairType repairType)
     {
         return applyOverrides(repairType, opt -> opt.table_max_repair_time_in_sec);
@@ -277,8 +257,6 @@ public class AutoRepairConfig implements Serializable
             opts.parallel_repair_count_in_group = 1;
             opts.parallel_repair_percentage_in_group = 0;
             opts.sstable_upper_threshold = 10000;
-            opts.ignore_keyspaces = "\\b(?!system_auth\\b)system\\w+|.*staging.*|.*test.*|health|pingless";
-            opts.repair_only_keyspaces = "";
             opts.min_repair_interval_in_hours = 24;
             opts.ignore_dcs = new HashSet<>();
             opts.repair_primary_token_range_only = true;
@@ -296,41 +274,64 @@ public class AutoRepairConfig implements Serializable
         public volatile Boolean repair_by_keyspace;
         // the number of subranges to split each to-be-repaired token range into,
         // the higher this number, the smaller the repair sessions will be
+        // How many subranges to divide one range into? The default is 1.
+        // If you are using v-node, say 256, then the repair will always go one v-node range at a time, this parameter, additionally, will let us further subdivide a given v-node range into sub-ranges.
+        // With the value “1” and v-nodes of 256, a given table on a node will undergo the repair 256 times. But with a value “2,” the same table on a node will undergo a repair 512 times because every v-node range will be further divided by two.
+        // If you do not use v-nodes or the number of v-nodes is pretty small, say 8, setting this value to a higher number, say 16, will be useful to repair on a smaller range, and the chance of succeeding is higher.
         public volatile Integer number_of_subranges;
-        // the number of repair threads to run for the given repair type
+        // the number of repair threads to run for a given invoked Repair Job.
+        // Once the scheduler schedules one Job, then howmany threads to use inside that job will be controlled through this parameter.
+        // This is similar to -j for repair options for the nodetool repair command.
         public volatile Integer number_of_repair_threads;
         // the number of repair sessions that can run in parallel in a single group
+        // The number of nodes running repair parallelly. If parallelrepaircount is set, it will choose the larger value of the two. The default is 3.
+        // This configuration controls how many nodes would run repair in parallel.
+        // The value “3” means, at any given point in time, at most 3 nodes would be running repair in parallel.
+        // If one or more node(s) finish repair, then the framework automatically picks up the next candidate and ensures the maximum number of nodes running repair do not exceed “3”.
         public volatile Integer parallel_repair_count_in_group;
         // the number of repair sessions that can run in parallel in a single groupas a percentage
         // of the total number of nodes in the group [0,100]
+        // The percentage of nodes in the cluster that run repair parallelly. If parallelrepaircount is set, it will choose the larger value of the two.
+        //The problem with a fixed number of nodes (the above property) is that in a large-scale environment,
+        // the nodes keep getting added/removed due to elasticity, so if we have a fixed number, then manual interventions would increase because, on a continuous basis,operators would have to adjust to meet the SLA.
+        //The default is 3%, which means that 3% of the nodes in the Cassandra cluster would be repaired in parallel.
+        // So now, if a fleet, an operator won't have to worry about changing the repair frequency, etc., as overall repair time will continue to remain the same even if nodes are added or removed due to elasticity.
+        // Extremely fewer manual interventions as it will rarely violate the repair SLA for customers
         public volatile Integer parallel_repair_percentage_in_group;
         // the upper threshold of SSTables allowed to participate in a single repair session
+        // Threshold to skip a table if it has too many sstables. The default is 10000. This means, if a table on a node has 10000 or more SSTables, then that table will be skipped.
+        // This is to avoid penalizing good neighbors with an outlier.
         public volatile Integer sstable_upper_threshold;
-        // specifies a denylist of keyspaces to repair
-        public volatile String ignore_keyspaces;
-        // specifies an allowlist of keyspaces to repair
-        public volatile String repair_only_keyspaces;
         // the minimum time in hours between repairs of the same token range
+        // The minimum number of hours to run one repair cycle is 24 hours. The default is 24 hours.
+        // This means that if auto repair finishes one round on one cluster within 24 hours, it won’t start a new round.
+        // This is applicable for extremely tiny clusters, say 3 nodes.
         public volatile Integer min_repair_interval_in_hours;
         // specifies a denylist of datacenters to repair
+        // This is useful if you want to completely avoid running repairs in one or more data centers. By default, it is empty, i.e., the framework will repair nodes in all the datacenters.
         public volatile Set<String> ignore_dcs;
         // Set this 'true' if AutoRepair should repair only the primary ranges owned by this node; else, 'false'
+        // It is the same as -pr in nodetool repair options.
         public volatile Boolean repair_primary_token_range_only;
-        // by default, the value is empty, it means the all nodes are in one ring and the repair in that ring should be done
-        // node by node. Adding this config for special case(cstar-peloton) that certain keyspace data is only stored in
-        // certain cluster. We can run multiple node repair at the same time without worrying about the conflict. For example,
-        // if the value is "dca1,phx2|dca11|phx3|phx4,dca5,dca6", there will be 4 groups {dca1, phx2}, {dca11}, {phx3} and
-        // {phx4, dca5, dca6}. This means we can run repair parallely on 4 nodes, each in one group.
+        // By default, the value is empty, which means all nodes are in one ring and the repair in that ring should be done node by node.
+        // Adding this config for special cases where certain keyspace data is only stored in
+        // certain data centers. We can run multiple node repairs at the same time.
+        // For example, if the value is “dc1,dc2|dc3|dc4|dc5,dc6,dca7”, there will be 4 groups {dc1, dc2}, {dc3}, {dc4} and {dc5, dc6, dc7}.
+        // This means we can run repair parallely on 4 nodes, each in one group.
         public volatile Set<String> repair_dc_groups;
         // configures whether to force immediate repair on new nodes
         public volatile Boolean force_repair_new_node;
         // the maximum time in seconds that a repair session can run for a single table
+        // Max time for repairing one table, if exceeded, skip the table. The default is 6 * 60 * 60, which is 6 hours.
+        // Let's say there is a Cassandra cluster in that there are 10 tables belonging to 10 different customers.
+        // Out of these 10 tables, 1 table is humongous. Repairing this 1 table, say, takes 5 days, in the worst case, but others could finish in just 1 hour.
+        // Then we would penalize 9 customers just because of one bad actor, and those 9 customers would ping an operator telling them they are violating SLA even if I am a neighbor, and it would require a lot of back-and-forth manual interventions, etc.
+        // So, the idea here is to penalize the outliers instead of good candidates. This can easily be configured with a higher value if we want to disable the functionality.
+        // Please note the repair will still run in parallel on other nodes, this is to address outliers on a given node.
         public volatile Long table_max_repair_time_in_sec;
         /**
-         * MVs are mutated at LOCAL_ONE consistency level. By default, historically, we have not been running full repair on MV tables.
-         * Due to that, on the server side, MV replicas are out of sync, which leads to inconsistencies when reading from MV itself.
-         * <p>
-         * This flag determines whether we need to run anti-entropy, a.k.a, repair on the MV table or not.
+         * the default is 'true'. MVs are mutated at LOCAL_ONE consistency level in Cassandra.
+         * This flag determines whether the auto-repair framework needs to run anti-entropy, a.k.a, repair on the MV table or not.
          */
         public volatile Boolean mv_repair_enabled;
     }

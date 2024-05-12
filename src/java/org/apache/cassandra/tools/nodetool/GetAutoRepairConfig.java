@@ -65,8 +65,6 @@ public class GetAutoRepairConfig extends NodeToolCmd
         sb.append("\n\tminimum repair interval in hours: " + config.getRepairMinIntervalInHours(repairType));
         sb.append("\n\trepair threads: " + config.getRepairThreads(repairType));
         sb.append("\n\tnumber of repair subranges: " + config.getRepairSubRangeNum(repairType));
-        sb.append("\n\tignore keyspaces: " + config.getRepairIgnoreKeyspaces(repairType));
-        sb.append("\n\trepair only keyspaces: " + config.getRepairOnlyKeyspaces(repairType));
         sb.append("\n\tpriority hosts: " + Joiner.on(',').skipNulls().join(probe.getRepairPriorityForHosts(repairType)));
         sb.append("\n\tsstable count higher threshold: " + config.getRepairSSTableCountHigherThreshold(repairType));
         sb.append("\n\ttable max repair time in sec: " + config.getAutoRepairTableMaxRepairTimeInSec(repairType));

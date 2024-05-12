@@ -81,6 +81,9 @@ public abstract class AutoRepairState implements ProgressListener
     protected int repairTableFailureCount = 0;
     @VisibleForTesting
     protected int totalMVTablesConsideredForRepair = 0;
+
+    @VisibleForTesting
+    protected int totalDisabledTablesRepairCount = 0;
     @VisibleForTesting
     protected AutoRepairHistory longestUnrepairedNode;
     @VisibleForTesting
@@ -261,6 +264,16 @@ public abstract class AutoRepairState implements ProgressListener
     public void recordTurn(AutoRepairUtilsV2.RepairTurn turn)
     {
         metrics.recordTurn(turn);
+    }
+
+    public void setTotalDisabledTablesRepairCount(int count)
+    {
+        totalDisabledTablesRepairCount = count;
+    }
+
+    public int getTotalDisabledTablesRepairCount()
+    {
+        return totalDisabledTablesRepairCount;
     }
 }
 

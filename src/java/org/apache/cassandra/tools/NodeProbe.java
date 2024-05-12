@@ -2194,16 +2194,6 @@ public class NodeProbe implements AutoCloseable
         autoRepairProxy.setRepairSSTableCountHigherThreshold(repairType, ssTableHigherThreshold);
     }
 
-    public void setRepairIgnoreKeyspaces(AutoRepairConfig.RepairType repairType, String ignoreKeyspaceRegex)
-    {
-        autoRepairProxy.setRepairIgnoreKeyspaces(repairType, ignoreKeyspaceRegex);
-    }
-
-    public void setRepairOnlyKeyspaces(AutoRepairConfig.RepairType repairType, String repairOnlyKeyspacesRegex)
-    {
-        autoRepairProxy.setRepairOnlyKeyspaces(repairType, repairOnlyKeyspacesRegex);
-    }
-
     public void setAutoRepairTableMaxRepairTimeInSec(AutoRepairConfig.RepairType repairType, long autoRepairTableMaxRepairTimeInSec)
     {
         autoRepairProxy.setAutoRepairTableMaxRepairTimeInSec(repairType, autoRepairTableMaxRepairTimeInSec);

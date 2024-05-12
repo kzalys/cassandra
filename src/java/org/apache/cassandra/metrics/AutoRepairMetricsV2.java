@@ -41,6 +41,7 @@ public class AutoRepairMetricsV2
     public Counter repairTurnMyTurnDueToPriority;
     public Counter repairTurnMyTurnForceRepair;
     public Gauge<Integer> totalMVTablesConsideredForRepair;
+    public Gauge<Integer> totalDisabledRepairTables;
 
     public AutoRepairMetricsV2(RepairType repairType)
     {
@@ -103,6 +104,14 @@ public class AutoRepairMetricsV2
             public Integer getValue()
             {
                 return AutoRepairV2.instance.getRepairState(repairType).getTotalMVTablesConsideredForRepair();
+            }
+        });
+
+        totalDisabledRepairTables = Metrics.register(factory.createMetricName("TotalDisabledRepairTables"), new Gauge<Integer>()
+        {
+            public Integer getValue()
+            {
+                return AutoRepairV2.instance.getRepairState(repairType).getTotalDisabledTablesRepairCount();
             }
         });
     }

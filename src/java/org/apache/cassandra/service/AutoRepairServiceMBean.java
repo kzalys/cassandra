@@ -49,10 +49,6 @@ public interface AutoRepairServiceMBean
 
     public void setRepairSSTableCountHigherThreshold(RepairType repairType, int ssTableHigherThreshold);
 
-    public void setRepairIgnoreKeyspaces(RepairType repairType, String ignoreKeyspaceRegex);
-
-    public void setRepairOnlyKeyspaces(RepairType repairType, String repairOnlyKeyspacesRegex);
-
     public void setAutoRepairTableMaxRepairTimeInSec(RepairType repairType, long autoRepairTableMaxRepairTimeInSec);
     public void setIgnoreDCs(RepairType repairType, Set<String> ignorDCs);
 
