@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.cassandra.repair.AutoRepairConfig;
 import org.apache.cassandra.service.AutoRepairService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,41 +51,39 @@ public class AutoRepairTokenRangeDefault implements IAutoRepairTokenRange
         }
         AutoRepairConfig config = AutoRepairService.instance.getAutoRepairConfig();
         int numberOfSubranges = config.getRepairSubRangeNum(repairType);
-        for (Range<Token> token : tokens) {
+        for (Range<Token> token : tokens)
+        {
             Murmur3Partitioner.LongToken l = (Murmur3Partitioner.LongToken) (token.left);
             Murmur3Partitioner.LongToken r = (Murmur3Partitioner.LongToken) (token.right);
             Token parentStartToken = StorageService.instance.getTokenMetadata()
-                    .partitioner.getTokenFactory().fromString("" + l.getTokenValue());
+                                     .partitioner.getTokenFactory().fromString("" + l.getTokenValue());
             Token parentEndToken = StorageService.instance.getTokenMetadata()
-                    .partitioner.getTokenFactory().fromString("" + r.getTokenValue());
+                                   .partitioner.getTokenFactory().fromString("" + r.getTokenValue());
             logger.debug("Parent Token Left side {}, right side {}", parentStartToken.toString(),
-                    parentEndToken.toString());
+                         parentEndToken.toString());
 
             long left = (Long) l.getTokenValue();
             long right = (Long) r.getTokenValue();
             long repairTokenWidth = (right - left) / numberOfSubranges;
-            if ((right - left) < numberOfSubranges) {
-                logger.warn("Too many sub-ranges are given {}", numberOfSubranges);
-                numberOfSubranges = (int) (right - left) == 0 ? 1 : (int) (right - left);
-                repairTokenWidth = 1;
-            }
-            for (int i = 0; i < numberOfSubranges; i++) {
+            for (int i = 0; i < numberOfSubranges; i++)
+            {
                 long curLeft = left + (i * repairTokenWidth);
                 long curRight = curLeft + repairTokenWidth;
 
-                if ((i + 1) == numberOfSubranges) {
+                if ((i + 1) == numberOfSubranges)
+                {
                     curRight = right;
                 }
 
                 Token childStartToken = StorageService.instance.getTokenMetadata()
-                        .partitioner.getTokenFactory().fromString("" + curLeft);
+                                        .partitioner.getTokenFactory().fromString("" + curLeft);
                 Token childEndToken = StorageService.instance.getTokenMetadata()
-                        .partitioner.getTokenFactory().fromString("" + curRight);
+                                      .partitioner.getTokenFactory().fromString("" + curRight);
                 logger.debug("Current Token Left side {}, right side {}", childStartToken
-                        .toString(), childEndToken.toString());
+                                                                          .toString(), childEndToken.toString());
                 range.add(Pair.create(childStartToken, childEndToken));
             }
         }
-       return range;
+        return range;
     }
 }

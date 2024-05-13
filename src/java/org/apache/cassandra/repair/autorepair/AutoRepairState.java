@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.cassandra.repair.state;
+package org.apache.cassandra.repair.autorepair;
 
 import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.db.view.TableViews;
@@ -26,9 +27,8 @@ import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.metrics.AutoRepairMetricsManager;
 import org.apache.cassandra.metrics.AutoRepairMetricsV2;
-import org.apache.cassandra.repair.AutoRepairConfig.RepairType;
-import org.apache.cassandra.repair.AutoRepairUtilsV2;
-import org.apache.cassandra.repair.AutoRepairUtilsV2.AutoRepairHistory;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
+import org.apache.cassandra.repair.autorepair.AutoRepairUtils.AutoRepairHistory;
 import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.repair.RepairRunnable;
 import org.apache.cassandra.repair.messages.RepairOption;
@@ -39,6 +39,7 @@ import org.apache.cassandra.utils.concurrent.Condition;
 import org.apache.cassandra.utils.progress.ProgressEvent;
 import org.apache.cassandra.utils.progress.ProgressEventType;
 import org.apache.cassandra.utils.progress.ProgressListener;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -261,7 +262,7 @@ public abstract class AutoRepairState implements ProgressListener
         return success;
     }
 
-    public void recordTurn(AutoRepairUtilsV2.RepairTurn turn)
+    public void recordTurn(AutoRepairUtils.RepairTurn turn)
     {
         metrics.recordTurn(turn);
     }

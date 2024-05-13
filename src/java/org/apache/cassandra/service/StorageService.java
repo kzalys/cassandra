@@ -84,8 +84,8 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.apache.cassandra.repair.AutoRepairKeyspace;
-import org.apache.cassandra.repair.AutoRepairV2;
+import org.apache.cassandra.repair.autorepair.AutoRepairKeyspace;
+import org.apache.cassandra.repair.autorepair.AutoRepair;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1340,7 +1340,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         if (DatabaseDescriptor.getAutoRepairConfig().isAutoRepairSchedulingEnabled())
         {
             logger.info("Enable auto-repair scheduling");
-            AutoRepairV2.instance.setup();
+            AutoRepair.instance.setup();
         }
         logger.info("AutoRepair setup complete!");
     }

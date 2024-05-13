@@ -34,7 +34,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import org.apache.cassandra.repair.AutoRepairConfig;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

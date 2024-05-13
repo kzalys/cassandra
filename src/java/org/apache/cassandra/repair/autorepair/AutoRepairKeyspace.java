@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.cassandra.repair;
+package org.apache.cassandra.repair.autorepair;
 
 import java.util.concurrent.TimeUnit;
 
@@ -39,7 +39,7 @@ public class AutoRepairKeyspace
      * Generation is used as a timestamp for automatic table creation on startup.
      * If you make any changes to the tables below, make sure to increment the
      * generation and document your change here.
-     *
+     * <p>
      * gen 0: original definition in 3.0
      * gen 3: introduce v2 tables in 4.0
      */
@@ -55,49 +55,49 @@ public class AutoRepairKeyspace
 
     private static final TableMetadata AutoRepairHistory =
     parse(AUTO_REPAIR_HISTORY,
-            "Auto repair history for each node",
-            "CREATE TABLE %s ("
-            + "pid int,"
-            + "host_id uuid,"
-            + "repair_turn text,"
-            + "repair_start_ts timestamp,"
-            + "repair_finish_ts timestamp,"
-            + "delete_hosts set<uuid>,"
-            + "delete_hosts_update_time timestamp,"
-            + "force_repair boolean,"
-            + "PRIMARY KEY (pid, host_id))");
+          "Auto repair history for each node",
+          "CREATE TABLE %s ("
+          + "pid int,"
+          + "host_id uuid,"
+          + "repair_turn text,"
+          + "repair_start_ts timestamp,"
+          + "repair_finish_ts timestamp,"
+          + "delete_hosts set<uuid>,"
+          + "delete_hosts_update_time timestamp,"
+          + "force_repair boolean,"
+          + "PRIMARY KEY (pid, host_id))");
 
     private static final TableMetadata AutoRepairPriority =
     parse(AUTO_REPAIR_PRIORITY,
-            "Auto repair priority for each group",
-            "CREATE TABLE %s ("
-            + "pid int,"
-            + "repair_priority set<uuid>,"
-            + "PRIMARY KEY (pid))");
+          "Auto repair priority for each group",
+          "CREATE TABLE %s ("
+          + "pid int,"
+          + "repair_priority set<uuid>,"
+          + "PRIMARY KEY (pid))");
 
     private static final TableMetadata AutoRepairHistoryV2 =
     parse(AUTO_REPAIR_HISTORY_V2,
-            "Auto repair history for each node",
-            "CREATE TABLE %s ("
-            + "pid int,"
-            + "host_id uuid,"
-            + "repair_type text,"
-            + "repair_turn text,"
-            + "repair_start_ts timestamp,"
-            + "repair_finish_ts timestamp,"
-            + "delete_hosts set<uuid>,"
-            + "delete_hosts_update_time timestamp,"
-            + "force_repair boolean,"
-            + "PRIMARY KEY ((pid, repair_type), host_id))");
+          "Auto repair history for each node",
+          "CREATE TABLE %s ("
+          + "pid int,"
+          + "host_id uuid,"
+          + "repair_type text,"
+          + "repair_turn text,"
+          + "repair_start_ts timestamp,"
+          + "repair_finish_ts timestamp,"
+          + "delete_hosts set<uuid>,"
+          + "delete_hosts_update_time timestamp,"
+          + "force_repair boolean,"
+          + "PRIMARY KEY ((pid, repair_type), host_id))");
 
     private static final TableMetadata AutoRepairPriorityV2 =
     parse(AUTO_REPAIR_PRIORITY_V2,
-            "Auto repair priority for each group",
-            "CREATE TABLE %s ("
-            + "pid int,"
-            + "repair_type text,"
-            + "repair_priority set<uuid>,"
-            + "PRIMARY KEY ((pid, repair_type)))");
+          "Auto repair priority for each group",
+          "CREATE TABLE %s ("
+          + "pid int,"
+          + "repair_type text,"
+          + "repair_priority set<uuid>,"
+          + "PRIMARY KEY ((pid, repair_type)))");
 
     private static TableMetadata parse(String name, String description, String schema)
     {
@@ -111,7 +111,8 @@ public class AutoRepairKeyspace
     public static KeyspaceMetadata metadata()
     {
         Tables tables = Tables.of(AutoRepairPriority, AutoRepairHistory);
-        if (DatabaseDescriptor.getAutoRepairConfig().isAutoRepairSchedulingEnabled()) {
+        if (DatabaseDescriptor.getAutoRepairConfig().isAutoRepairSchedulingEnabled())
+        {
             tables = tables.with(AutoRepairHistoryV2);
             tables = tables.with(AutoRepairPriorityV2);
         }

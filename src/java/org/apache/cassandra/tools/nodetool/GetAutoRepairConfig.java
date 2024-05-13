@@ -20,14 +20,12 @@ package org.apache.cassandra.tools.nodetool;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import io.airlift.airline.Command;
-import io.airlift.airline.Option;
-import org.apache.cassandra.repair.AutoRepairConfig;
-import org.apache.cassandra.repair.AutoRepairConfig.RepairType;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
 
 import java.io.PrintStream;
-import java.util.Set;
 
 @Command(name = "getautorepairconfig", description = "Print autorepair configurations")
 public class GetAutoRepairConfig extends NodeToolCmd

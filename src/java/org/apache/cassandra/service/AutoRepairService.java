@@ -19,9 +19,9 @@ package org.apache.cassandra.service;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.locator.InetAddressAndPort;
-import org.apache.cassandra.repair.AutoRepairConfig;
-import org.apache.cassandra.repair.AutoRepairConfig.RepairType;
-import org.apache.cassandra.repair.AutoRepairUtilsV2;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
+import org.apache.cassandra.repair.autorepair.AutoRepairUtils;
 import org.apache.cassandra.utils.MBeanWrapper;
 
 import java.util.Set;
@@ -62,7 +62,7 @@ public class AutoRepairService implements AutoRepairServiceMBean
     @Override
     public Set<InetAddressAndPort> filterHostsInLocalGroup(RepairType repairType, Set<InetAddressAndPort> hostsToFilter)
     {
-        return AutoRepairUtilsV2.processNodesByGroup(repairType, hostsToFilter);
+        return AutoRepairUtils.processNodesByGroup(repairType, hostsToFilter);
     }
 
     @Override
@@ -80,18 +80,18 @@ public class AutoRepairService implements AutoRepairServiceMBean
     @Override
     public void setRepairPriorityForHosts(RepairType repairType, Set<InetAddressAndPort> hosts)
     {
-        AutoRepairUtilsV2.addPriorityHosts(repairType, hosts);
+        AutoRepairUtils.addPriorityHosts(repairType, hosts);
     }
 
     @Override
     public Set<InetAddressAndPort> getRepairHostPriority(RepairType repairType) {
-        return AutoRepairUtilsV2.getPriorityHosts(repairType);
+        return AutoRepairUtils.getPriorityHosts(repairType);
     }
 
     @Override
     public void setForceRepairForHosts(RepairType repairType, Set<InetAddressAndPort> hosts)
     {
-        AutoRepairUtilsV2.setForceRepair(repairType, hosts);
+        AutoRepairUtils.setForceRepair(repairType, hosts);
     }
 
     @Override

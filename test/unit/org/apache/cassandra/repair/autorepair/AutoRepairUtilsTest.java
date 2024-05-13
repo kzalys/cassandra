@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.cassandra.repair;
+package org.apache.cassandra.repair.autorepair;
 
 import java.util.HashSet;
 import java.util.List;
@@ -39,9 +39,9 @@ import org.apache.cassandra.db.marshal.UUIDType;
 import org.apache.cassandra.gms.Gossiper;
 import org.apache.cassandra.locator.IEndpointSnitch;
 import org.apache.cassandra.locator.InetAddressAndPort;
-import org.apache.cassandra.repair.AutoRepairConfig.RepairType;
-import org.apache.cassandra.repair.AutoRepairUtilsV2.AutoRepairHistory;
-import org.apache.cassandra.repair.AutoRepairUtilsV2.CurrentRepairStatus;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
+import org.apache.cassandra.repair.autorepair.AutoRepairUtils.AutoRepairHistory;
+import org.apache.cassandra.repair.autorepair.AutoRepairUtils.CurrentRepairStatus;
 
 import org.apache.cassandra.cql3.CQLTester;
 import org.apache.cassandra.cql3.QueryProcessor;
@@ -53,19 +53,19 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import static org.apache.cassandra.Util.setAutoRepairEnabled;
-import static org.apache.cassandra.repair.AutoRepairUtilsV2.COL_DELETE_HOSTS;
-import static org.apache.cassandra.repair.AutoRepairUtilsV2.COL_FORCE_REPAIR;
-import static org.apache.cassandra.repair.AutoRepairUtilsV2.COL_REPAIR_FINISH_TS;
-import static org.apache.cassandra.repair.AutoRepairUtilsV2.COL_REPAIR_PRIORITY;
-import static org.apache.cassandra.repair.AutoRepairUtilsV2.COL_REPAIR_START_TS;
-import static org.apache.cassandra.repair.AutoRepairUtilsV2.COL_REPAIR_TURN;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.COL_DELETE_HOSTS;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.COL_FORCE_REPAIR;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.COL_REPAIR_FINISH_TS;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.COL_REPAIR_PRIORITY;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.COL_REPAIR_START_TS;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.COL_REPAIR_TURN;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
-public class AutoRepairUtilsV2Test extends CQLTester
+public class AutoRepairUtilsTest extends CQLTester
 {
     static RepairType repairType = RepairType.incremental;
     static int pid = "".hashCode();
@@ -87,7 +87,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         defaultSnitch = DatabaseDescriptor.getEndpointSnitch();
         localEndpoint = FBUtilities.getBroadcastAddressAndPort();
         hostId = Gossiper.instance.getHostId(localEndpoint);
-        AutoRepairUtilsV2.setup();
+        AutoRepairUtils.setup();
         SchemaLoader.prepareServer();
         SchemaLoader.createKeyspace("ks", KeyspaceParams.create(false,
                                                                 ImmutableMap.of("class", "NetworkTopologyStrategy", "datacenter1", "1")),
@@ -118,7 +118,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         SchemaConstants.AUTO_REPAIR_KEYSPACE_NAME, AutoRepairKeyspace.AUTO_REPAIR_HISTORY_V2,
         repairType.toString(), pid, hostId));
 
-        AutoRepairUtilsV2.setForceRepair(repairType, ImmutableSet.of(localEndpoint));
+        AutoRepairUtils.setForceRepair(repairType, ImmutableSet.of(localEndpoint));
 
         UntypedResultSet result = QueryProcessor.executeInternal(String.format(
         "SELECT force_repair FROM %s.%s WHERE repair_type = '%s' AND pid = %s AND host_id = %s",
@@ -132,7 +132,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
     @Test
     public void testSetForceRepairNewNode()
     {
-        AutoRepairUtilsV2.setForceRepairNewNode(repairType);
+        AutoRepairUtils.setForceRepairNewNode(repairType);
 
         UntypedResultSet result = QueryProcessor.executeInternal(String.format(
         "SELECT force_repair FROM %s.%s WHERE repair_type = '%s' AND pid = %s AND host_id = %s",
@@ -152,7 +152,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         SchemaConstants.AUTO_REPAIR_KEYSPACE_NAME, AutoRepairKeyspace.AUTO_REPAIR_HISTORY_V2,
         repairType.toString(), pid, hostId, hostId));
 
-        AutoRepairUtilsV2.clearDeleteHosts(repairType, hostId);
+        AutoRepairUtils.clearDeleteHosts(repairType, hostId);
 
         UntypedResultSet result = QueryProcessor.executeInternal(String.format(
         "SELECT delete_hosts FROM %s.%s WHERE repair_type = '%s' AND pid = %s AND host_id = %s",
@@ -172,7 +172,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         SchemaConstants.AUTO_REPAIR_KEYSPACE_NAME, AutoRepairKeyspace.AUTO_REPAIR_HISTORY_V2,
         repairType.toString(), pid, hostId));
 
-        List<AutoRepairHistory> history = AutoRepairUtilsV2.getAutoRepairHistoryForLocalGroup(repairType);
+        List<AutoRepairHistory> history = AutoRepairUtils.getAutoRepairHistoryForLocalGroup(repairType);
 
         assertNotNull(history);
         assertEquals(1, history.size());
@@ -182,7 +182,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
     @Test
     public void testGetAutoRepairHistoryForLocalGroup_empty_history()
     {
-        List<AutoRepairHistory> history = AutoRepairUtilsV2.getAutoRepairHistoryForLocalGroup(repairType);
+        List<AutoRepairHistory> history = AutoRepairUtils.getAutoRepairHistoryForLocalGroup(repairType);
 
         assertNull(history);
     }
@@ -193,7 +193,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         DatabaseDescriptor.getAutoRepairConfig().setDCGroups(repairType, ImmutableSet.of(
         String.format("%s|dc2", DatabaseDescriptor.getLocalDataCenter()), "dc3"));
 
-        Set<String> dcGroup = AutoRepairUtilsV2.getLocalDCGroup(repairType);
+        Set<String> dcGroup = AutoRepairUtils.getLocalDCGroup(repairType);
 
         assertEquals(ImmutableSet.of(DatabaseDescriptor.getLocalDataCenter(), "dc2"), dcGroup);
     }
@@ -220,7 +220,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         SchemaConstants.AUTO_REPAIR_KEYSPACE_NAME, AutoRepairKeyspace.AUTO_REPAIR_PRIORITY_V2,
         repairType.toString(), pid, regularRepair));
 
-        CurrentRepairStatus status = AutoRepairUtilsV2.getCurrentRepairStatus(repairType);
+        CurrentRepairStatus status = AutoRepairUtils.getCurrentRepairStatus(repairType);
 
         assertNotNull(status);
         assertEquals(1, status.historiesWithoutOnGoingRepair.size());
@@ -245,8 +245,8 @@ public class AutoRepairUtilsV2Test extends CQLTester
         when(snitchMock.getDatacenter(otherEndpoint)).thenReturn("dc2");
         when(snitchMock.getDatacenter(ignoredEndpoint)).thenReturn("dc3");
 
-        Set<InetAddressAndPort> nodesInCurrentRing = AutoRepairUtilsV2.processNodesByGroup(repairType,
-                                                                                           ImmutableSet.of(localEndpoint, ignoredEndpoint, otherEndpoint));
+        Set<InetAddressAndPort> nodesInCurrentRing = AutoRepairUtils.processNodesByGroup(repairType,
+                                                                                         ImmutableSet.of(localEndpoint, ignoredEndpoint, otherEndpoint));
 
         assertNotNull(nodesInCurrentRing);
         assertEquals(2, nodesInCurrentRing.size());
@@ -257,7 +257,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
     @Test
     public void testGetHostIdsInCurrentRing()
     {
-        TreeSet<UUID> hosts = AutoRepairUtilsV2.getHostIdsInCurrentRing(repairType);
+        TreeSet<UUID> hosts = AutoRepairUtils.getHostIdsInCurrentRing(repairType);
 
         assertNotNull(hosts);
         assertEquals(1, hosts.size());
@@ -275,7 +275,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         when(snitchMock.getDatacenter(ignoredEndpoint)).thenReturn("dc2");
         when(snitchMock.getDatacenter(deadEndpoint)).thenReturn("dc1");
 
-        TreeSet<UUID> hosts = AutoRepairUtilsV2.getHostIdsInCurrentRing(repairType, ImmutableSet.of(localEndpoint, ignoredEndpoint, deadEndpoint));
+        TreeSet<UUID> hosts = AutoRepairUtils.getHostIdsInCurrentRing(repairType, ImmutableSet.of(localEndpoint, ignoredEndpoint, deadEndpoint));
 
         assertNotNull(hosts);
         assertEquals(1, hosts.size());
@@ -295,7 +295,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         SchemaConstants.AUTO_REPAIR_KEYSPACE_NAME, AutoRepairKeyspace.AUTO_REPAIR_HISTORY_V2,
         repairType.toString(), pid, otherHostId));
 
-        AutoRepairHistory history = AutoRepairUtilsV2.getHostWithLongestUnrepairTime(repairType);
+        AutoRepairHistory history = AutoRepairUtils.getHostWithLongestUnrepairTime(repairType);
 
         assertEquals(hostId, history.hostId);
     }
@@ -305,7 +305,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
     {
         DatabaseDescriptor.getAutoRepairConfig().setParallelRepairCountInGroup(repairType, 2);
 
-        int count = AutoRepairUtilsV2.getMaxNumberOfNodeRunAutoRepairInGroup(repairType, 0);
+        int count = AutoRepairUtils.getMaxNumberOfNodeRunAutoRepairInGroup(repairType, 0);
 
         assertEquals(2, count);
     }
@@ -318,7 +318,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         DatabaseDescriptor.getAutoRepairConfig().setParallelRepairPercentageInGroup(repairType, 50);
 
 
-        int count = AutoRepairUtilsV2.getMaxNumberOfNodeRunAutoRepairInGroup(repairType, 10);
+        int count = AutoRepairUtils.getMaxNumberOfNodeRunAutoRepairInGroup(repairType, 10);
 
         assertEquals(5, count);
     }
@@ -331,7 +331,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         SchemaConstants.AUTO_REPAIR_KEYSPACE_NAME, AutoRepairKeyspace.AUTO_REPAIR_HISTORY_V2,
         repairType.toString(), pid, hostId));
 
-        AutoRepairUtilsV2.deleteAutoRepairHistory(repairType, hostId);
+        AutoRepairUtils.deleteAutoRepairHistory(repairType, hostId);
 
         UntypedResultSet result = QueryProcessor.executeInternal(String.format(
         "SELECT * FROM %s.%s WHERE repair_type = '%s' AND pid = %s AND host_id = %s",
@@ -349,7 +349,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         SchemaConstants.AUTO_REPAIR_KEYSPACE_NAME, AutoRepairKeyspace.AUTO_REPAIR_HISTORY_V2,
         repairType.toString(), pid, hostId));
 
-        AutoRepairUtilsV2.updateStartAutoRepairHistory(repairType, hostId, 123, AutoRepairUtilsV2.RepairTurn.MY_TURN);
+        AutoRepairUtils.updateStartAutoRepairHistory(repairType, hostId, 123, AutoRepairUtils.RepairTurn.MY_TURN);
 
         UntypedResultSet result = QueryProcessor.executeInternal(String.format(
         "SELECT repair_start_ts, repair_turn FROM %s.%s WHERE repair_type = '%s' AND pid = %s AND host_id = %s",
@@ -359,7 +359,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         assertEquals(1, result.size());
         UntypedResultSet.Row row = result.one();
         assertEquals(123, row.getLongOrDefault(COL_REPAIR_START_TS, 0));
-        assertEquals(AutoRepairUtilsV2.RepairTurn.MY_TURN.toString(), row.getString(COL_REPAIR_TURN));
+        assertEquals(AutoRepairUtils.RepairTurn.MY_TURN.toString(), row.getString(COL_REPAIR_TURN));
     }
 
     @Test
@@ -370,7 +370,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         SchemaConstants.AUTO_REPAIR_KEYSPACE_NAME, AutoRepairKeyspace.AUTO_REPAIR_HISTORY_V2,
         repairType.toString(), pid, hostId));
 
-        AutoRepairUtilsV2.updateFinishAutoRepairHistory(repairType, hostId, 123);
+        AutoRepairUtils.updateFinishAutoRepairHistory(repairType, hostId, 123);
 
         UntypedResultSet result = QueryProcessor.executeInternal(String.format(
         "SELECT repair_finish_ts FROM %s.%s WHERE repair_type = '%s' AND pid = %s AND host_id = %s",
@@ -390,7 +390,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         SchemaConstants.AUTO_REPAIR_KEYSPACE_NAME, AutoRepairKeyspace.AUTO_REPAIR_HISTORY_V2,
         repairType.toString(), pid, otherHostId));
 
-        AutoRepairUtilsV2.addHostIdToDeleteHosts(repairType, hostId, otherHostId);
+        AutoRepairUtils.addHostIdToDeleteHosts(repairType, hostId, otherHostId);
 
         UntypedResultSet result = QueryProcessor.executeInternal(String.format(
         "SELECT * FROM %s.%s WHERE repair_type = '%s' AND pid = %s AND host_id = %s",
@@ -407,7 +407,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
     @Test
     public void testAddPriorityHost()
     {
-        AutoRepairUtilsV2.addPriorityHosts(repairType, ImmutableSet.of(localEndpoint));
+        AutoRepairUtils.addPriorityHosts(repairType, ImmutableSet.of(localEndpoint));
 
         UntypedResultSet result = QueryProcessor.executeInternal(String.format(
         "SELECT * FROM %s.%s WHERE repair_type = '%s' AND pid = %s",
@@ -429,7 +429,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         SchemaConstants.AUTO_REPAIR_KEYSPACE_NAME, AutoRepairKeyspace.AUTO_REPAIR_PRIORITY_V2,
         repairType.toString(), pid, hostId));
 
-        AutoRepairUtilsV2.removePriorityStatus(repairType, hostId);
+        AutoRepairUtils.removePriorityStatus(repairType, hostId);
 
         UntypedResultSet result = QueryProcessor.executeInternal(String.format(
         "SELECT * FROM %s.%s WHERE repair_type = '%s' AND pid = %s",
@@ -449,7 +449,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
         SchemaConstants.AUTO_REPAIR_KEYSPACE_NAME, AutoRepairKeyspace.AUTO_REPAIR_PRIORITY_V2,
         repairType.toString(), pid, hostId));
 
-        Set<InetAddressAndPort> hosts = AutoRepairUtilsV2.getPriorityHosts(repairType);
+        Set<InetAddressAndPort> hosts = AutoRepairUtils.getPriorityHosts(repairType);
 
         assertNotNull(hosts);
         assertEquals(1, hosts.size());
@@ -461,7 +461,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
     {
         Keyspace ks = Keyspace.open("ks");
 
-        assertTrue(AutoRepairUtilsV2.checkNodeContainsKeyspaceReplica(ks));
+        assertTrue(AutoRepairUtils.checkNodeContainsKeyspaceReplica(ks));
     }
 
     @Test
@@ -469,7 +469,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
     {
         DatabaseDescriptor.getAutoRepairConfig().setAutoRepairTableMaxRepairTimeInSec(repairType, 0);
 
-        assertTrue(AutoRepairUtilsV2.tableMaxRepairTimeExceeded(repairType, 0));
+        assertTrue(AutoRepairUtils.tableMaxRepairTimeExceeded(repairType, 0));
     }
 
     @Test
@@ -477,7 +477,7 @@ public class AutoRepairUtilsV2Test extends CQLTester
     {
         DatabaseDescriptor.getAutoRepairConfig().setAutoRepairTableMaxRepairTimeInSec(repairType, 0);
 
-        assertTrue(AutoRepairUtilsV2.keyspaceMaxRepairTimeExceeded(repairType, 0, 1));
+        assertTrue(AutoRepairUtils.keyspaceMaxRepairTimeExceeded(repairType, 0, 1));
     }
 
     @Test
@@ -500,10 +500,10 @@ public class AutoRepairUtilsV2Test extends CQLTester
         DatabaseDescriptor.getAutoRepairConfig().setParallelRepairCountInGroup(repairType, 5);
         long currentMillis = System.currentTimeMillis();
         // finish time less than start time means that repair is ongoing
-        AutoRepairUtilsV2.insertNewRepairHistory(repairType, myID, currentMillis, currentMillis - 100);
+        AutoRepairUtils.insertNewRepairHistory(repairType, myID, currentMillis, currentMillis - 100);
         // finish time is larger than start time means that repair for other node is finished
-        AutoRepairUtilsV2.insertNewRepairHistory(repairType, otherID, currentMillis, currentMillis + 100);
+        AutoRepairUtils.insertNewRepairHistory(repairType, otherID, currentMillis, currentMillis + 100);
 
-        assertEquals(AutoRepairUtilsV2.RepairTurn.MY_TURN, AutoRepairUtilsV2.myTurnToRunRepair(repairType, myID));
+        assertEquals(AutoRepairUtils.RepairTurn.MY_TURN, AutoRepairUtils.myTurnToRunRepair(repairType, myID));
     }
 }

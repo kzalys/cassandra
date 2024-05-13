@@ -16,11 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.cassandra.repair;
+package org.apache.cassandra.repair.autorepair;
 
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
+
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,7 +32,7 @@ import org.junit.runners.Parameterized;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.cql3.CQLTester;
 import org.apache.cassandra.exceptions.ConfigurationException;
-import org.apache.cassandra.repair.AutoRepairConfig.Options;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig.Options;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

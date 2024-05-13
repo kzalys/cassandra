@@ -20,9 +20,9 @@ package org.apache.cassandra.metrics;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.cassandra.repair.AutoRepairConfig.RepairType;
-import org.apache.cassandra.repair.AutoRepairUtilsV2;
-import org.apache.cassandra.repair.AutoRepairV2;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
+import org.apache.cassandra.repair.autorepair.AutoRepairUtils;
+import org.apache.cassandra.repair.autorepair.AutoRepair;
 
 import static org.apache.cassandra.metrics.CassandraMetricsRegistry.Metrics;
 
@@ -51,7 +51,7 @@ public class AutoRepairMetricsV2
         {
             public Integer getValue()
             {
-                return AutoRepairV2.instance.getRepairState(repairType).isRepairInProgress() ? 1 : 0;
+                return AutoRepair.instance.getRepairState(repairType).isRepairInProgress() ? 1 : 0;
             }
         });
 
@@ -59,7 +59,7 @@ public class AutoRepairMetricsV2
         {
             public Integer getValue()
             {
-                return AutoRepairV2.instance.getRepairState(repairType).getNodeRepairTimeInSec();
+                return AutoRepair.instance.getRepairState(repairType).getNodeRepairTimeInSec();
             }
         });
 
@@ -67,7 +67,7 @@ public class AutoRepairMetricsV2
         {
             public Integer getValue()
             {
-                return AutoRepairV2.instance.getRepairState(repairType).getClusterRepairTimeInSec();
+                return AutoRepair.instance.getRepairState(repairType).getClusterRepairTimeInSec();
             }
         });
 
@@ -75,7 +75,7 @@ public class AutoRepairMetricsV2
         {
             public Integer getValue()
             {
-                return AutoRepairV2.instance.getRepairState(repairType).getRepairSkippedTablesCount();
+                return AutoRepair.instance.getRepairState(repairType).getRepairSkippedTablesCount();
             }
         });
 
@@ -83,7 +83,7 @@ public class AutoRepairMetricsV2
         {
             public Integer getValue()
             {
-                return AutoRepairV2.instance.getRepairState(repairType).getLongestUnrepairedSec();
+                return AutoRepair.instance.getRepairState(repairType).getLongestUnrepairedSec();
             }
         });
 
@@ -91,7 +91,7 @@ public class AutoRepairMetricsV2
         {
             public Integer getValue()
             {
-                return AutoRepairV2.instance.getRepairState(repairType).getRepairFailedTablesCount();
+                return AutoRepair.instance.getRepairState(repairType).getRepairFailedTablesCount();
             }
         });
 
@@ -103,7 +103,7 @@ public class AutoRepairMetricsV2
         {
             public Integer getValue()
             {
-                return AutoRepairV2.instance.getRepairState(repairType).getTotalMVTablesConsideredForRepair();
+                return AutoRepair.instance.getRepairState(repairType).getTotalMVTablesConsideredForRepair();
             }
         });
 
@@ -111,12 +111,12 @@ public class AutoRepairMetricsV2
         {
             public Integer getValue()
             {
-                return AutoRepairV2.instance.getRepairState(repairType).getTotalDisabledTablesRepairCount();
+                return AutoRepair.instance.getRepairState(repairType).getTotalDisabledTablesRepairCount();
             }
         });
     }
 
-    public void recordTurn(AutoRepairUtilsV2.RepairTurn turn)
+    public void recordTurn(AutoRepairUtils.RepairTurn turn)
     {
         switch (turn)
         {

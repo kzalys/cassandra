@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.cassandra.repair;
+package org.apache.cassandra.repair.autorepair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,13 +27,14 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
+
 import org.apache.cassandra.locator.LocalStrategy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,21 +66,21 @@ import org.apache.cassandra.transport.ProtocolVersion;
 import org.apache.cassandra.transport.messages.ResultMessage;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FBUtilities;
-import org.apache.cassandra.repair.AutoRepairConfig.RepairType;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
 
-import static org.apache.cassandra.repair.AutoRepairConfig.Options.DC_GROUP_SEPARATOR;
-import static org.apache.cassandra.repair.AutoRepairUtilsV2.RepairTurn.MY_TURN;
-import static org.apache.cassandra.repair.AutoRepairUtilsV2.RepairTurn.MY_TURN_DUE_TO_PRIORITY;
-import static org.apache.cassandra.repair.AutoRepairUtilsV2.RepairTurn.NOT_MY_TURN;
-import static org.apache.cassandra.repair.AutoRepairUtilsV2.RepairTurn.MY_TURN_FORCE_REPAIR;
+import static org.apache.cassandra.repair.autorepair.AutoRepairConfig.Options.DC_GROUP_SEPARATOR;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN_DUE_TO_PRIORITY;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.NOT_MY_TURN;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN_FORCE_REPAIR;
 
 /**
  * This class serves as a utility class for AutoRepairV2. It contains various helper APIs
  * to store/retrieve repair status, decide whose turn is next, etc.
  */
-public class AutoRepairUtilsV2
+public class AutoRepairUtils
 {
-    private static final Logger logger = LoggerFactory.getLogger(AutoRepairUtilsV2.class);
+    private static final Logger logger = LoggerFactory.getLogger(AutoRepairUtils.class);
     static final String COL_REPAIR_TYPE = "repair_type";
     static final String COL_PID = "pid";  // this value is used to store the group id of the row.
     static final String COL_HOST_ID = "host_id";

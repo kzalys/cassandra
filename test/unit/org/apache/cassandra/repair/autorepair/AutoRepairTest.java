@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.cassandra.repair;
+package org.apache.cassandra.repair.autorepair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,13 +33,13 @@ import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.schema.KeyspaceMetadata;
 import org.apache.cassandra.schema.KeyspaceParams;
 import org.apache.cassandra.schema.ReplicationParams;
-import org.apache.cassandra.repair.AutoRepairConfig.RepairType;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
 import org.apache.cassandra.schema.SchemaTestUtil;
 
 import static org.apache.cassandra.Util.setAutoRepairEnabled;
 import static org.junit.Assert.assertEquals;
 
-public class AutoRepairV2Test extends CQLTester
+public class AutoRepairTest extends CQLTester
 {
     @BeforeClass
     public static void setupClass() throws Exception
@@ -51,7 +51,7 @@ public class AutoRepairV2Test extends CQLTester
     @Test
     public void testSetup()
     {
-        AutoRepairV2 instance = new AutoRepairV2();
+        AutoRepair instance = new AutoRepair();
 
         instance.setup();
 
@@ -70,7 +70,7 @@ public class AutoRepairV2Test extends CQLTester
         DatabaseDescriptor.getAutoRepairConfig().setAutoRepairEnabled(RepairType.incremental, true);
         DatabaseDescriptor.setCDCEnabled(true);
 
-        AutoRepairV2 instance = new AutoRepairV2();
+        AutoRepair instance = new AutoRepair();
         instance.setup();
     }
 
@@ -80,7 +80,7 @@ public class AutoRepairV2Test extends CQLTester
         DatabaseDescriptor.getAutoRepairConfig().setAutoRepairEnabled(RepairType.incremental, true);
         DatabaseDescriptor.setMaterializedViewsEnabled(true);
 
-        AutoRepairV2 instance = new AutoRepairV2();
+        AutoRepair instance = new AutoRepair();
         instance.setup();
     }
 
@@ -105,16 +105,15 @@ public class AutoRepairV2Test extends CQLTester
                 // case 1 :
                 // node reside in "datacenter1"
                 // keyspace has replica in "datacenter1"
-                Assert.assertTrue(AutoRepairUtilsV2.checkNodeContainsKeyspaceReplica(ks));
+                Assert.assertTrue(AutoRepairUtils.checkNodeContainsKeyspaceReplica(ks));
             }
             else if (ks.getName().equals(ksname2))
             {
                 // case 2 :
                 // node reside in "datacenter1"
                 // keyspace has replica in "datacenter2"
-                Assert.assertFalse(AutoRepairUtilsV2.checkNodeContainsKeyspaceReplica(ks));
+                Assert.assertFalse(AutoRepairUtils.checkNodeContainsKeyspaceReplica(ks));
             }
         }
     }
-
 }

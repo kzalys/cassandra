@@ -18,7 +18,7 @@
 
 package org.apache.cassandra.metrics;
 
-import org.apache.cassandra.repair.AutoRepairConfig.RepairType;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

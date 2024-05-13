@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.cassandra.repair;
+package org.apache.cassandra.repair.autorepair;
 
 import java.io.Serializable;
 import java.util.EnumMap;
@@ -270,7 +270,7 @@ public class AutoRepairConfig implements Serializable
 
         // enable/disable auto repair for the given repair type
         public volatile Boolean enabled;
-        // auto repair is default repair table by table, if this is enabled, we will repair keyspace by keyspace
+        // auto repair is default repair table by table, if this is enabled, the framework will repair all the tables in a keyspace in one go.
         public volatile Boolean repair_by_keyspace;
         // the number of subranges to split each to-be-repaired token range into,
         // the higher this number, the smaller the repair sessions will be

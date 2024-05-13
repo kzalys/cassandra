@@ -21,10 +21,11 @@ package org.apache.cassandra.repair.autorepair;
 import java.util.List;
 
 import org.apache.cassandra.dht.Token;
-import org.apache.cassandra.repair.AutoRepairConfig;
 import org.apache.cassandra.utils.Pair;
 
 public interface IAutoRepairTokenRange
 {
+    // split the token range you wish to repair into multiple subranges
+    // the autorepair framework will repair the list of returned subrange in a sequence
     List<Pair<Token, Token>> getRange(AutoRepairConfig.RepairType repairType, boolean primaryRangeOnly, String keyspaceName, String tableName);
 }

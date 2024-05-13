@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.cassandra.repair.state;
+package org.apache.cassandra.repair.autorepair;
 
-import org.apache.cassandra.repair.AutoRepairConfig.RepairType;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
 
 public class AutoRepairStateFactory
 {
