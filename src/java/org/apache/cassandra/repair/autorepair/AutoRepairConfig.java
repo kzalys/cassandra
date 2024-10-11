@@ -57,7 +57,8 @@ public class AutoRepairConfig implements Serializable
     public enum RepairType implements Serializable
     {
         full,
-        incremental;
+        incremental,
+        previewRepaired;
 
         public static AutoRepairState getAutoRepairState(RepairType repairType)
         {
