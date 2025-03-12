@@ -488,7 +488,7 @@ public class AutoRepairParameterizedTest extends CQLTester
         AutoRepairConfig config = AutoRepairService.instance.getAutoRepairConfig();
         config.setMaterializedViewRepairEnabled(repairType, true);
         config.setRepairMinInterval(repairType, "0s");
-        config.setRepairRetryBackoff("0s");
+        config.setRepairRetryBackoff(repairType, "0s");
         config.setAutoRepairTableMaxRepairTime(repairType, "0s");
         AutoRepair.timeFunc = () -> {
             timeFuncCalls++;
@@ -652,7 +652,7 @@ public class AutoRepairParameterizedTest extends CQLTester
         AutoRepair.sleepFunc = (Long duration, TimeUnit unit) -> {
             sleepCalls.getAndIncrement();
             assertEquals(TimeUnit.SECONDS, unit);
-            assertEquals(config.getRepairRetryBackoff().toSeconds(), (long) duration);
+            assertEquals(config.getRepairRetryBackoff(repairType).toSeconds(), (long) duration);
         };
         config.setRepairMinInterval(repairType, "0s");
         AutoRepair.instance.repairStates.put(repairType, autoRepairState);
@@ -660,7 +660,7 @@ public class AutoRepairParameterizedTest extends CQLTester
         AutoRepair.instance.repair(repairType);
 
         // Expect configured retries for each keyspace expected to be repaired
-        assertEquals(config.getRepairMaxRetries()*expectedRepairAssignments, sleepCalls.get());
+        assertEquals(config.getRepairMaxRetries(repairType)*expectedRepairAssignments, sleepCalls.get());
         verify(autoRepairState, times(1)).setSucceededTokenRangesCount(0);
         verify(autoRepairState, times(1)).setSkippedTokenRangesCount(0);
         verify(autoRepairState, times(1)).setFailedTokenRangesCount(expectedRepairAssignments);
@@ -676,7 +676,7 @@ public class AutoRepairParameterizedTest extends CQLTester
         AutoRepair.sleepFunc = (Long duration, TimeUnit unit) -> {
             sleepCalls.getAndIncrement();
             assertEquals(TimeUnit.SECONDS, unit);
-            assertEquals(config.getRepairRetryBackoff().toSeconds(), (long) duration);
+            assertEquals(config.getRepairRetryBackoff(repairType).toSeconds(), (long) duration);
         };
         doAnswer(invocation -> {
             if (sleepCalls.get() == 0)
@@ -691,7 +691,7 @@ public class AutoRepairParameterizedTest extends CQLTester
             return null;
         }).when(repairRunnable).addProgressListener(any());
         config.setRepairMinInterval(repairType, "0s");
-        config.setRepairMaxRetries(1);
+        config.setRepairMaxRetries(repairType, 1);
         AutoRepair.instance.repairStates.put(repairType, autoRepairState);
         AutoRepair.instance.repair(repairType);
 
@@ -865,7 +865,7 @@ public class AutoRepairParameterizedTest extends CQLTester
             return runnable;
         }).when(spyState).getRepairRunnable(any(), any(), any(), anyBoolean());
         when(spyState.getLastRepairTime()).thenReturn((long) 0);
-        AutoRepairService.instance.getAutoRepairConfig().setRepairMaxRetries(0);
+        AutoRepairService.instance.getAutoRepairConfig().setRepairMaxRetries(repairType, 0);
         AutoRepair.instance.repairStates.put(repairType, spyState);
 
         AutoRepair.instance.repair(repairType);

@@ -1,4 +1,5 @@
 5.1
+ * Move auto-repair retry policy config to repair-type level (CASSANDRA-20430)
  * Unregistering a node should also remove it from tokenMap if it is there and recalculate the placements (CASSANDRA-20346)
  * Fix PartitionUpdate.isEmpty deserialization issue to avoid potential EOFException (CASSANDRA-20345)
  * Avoid adding LEFT nodes to tokenMap on upgrade from gossip (CASSANDRA-20344)
